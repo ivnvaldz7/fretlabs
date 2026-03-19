@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+/* ── FretLabs Design Tokens ── */
+@theme {
+  --color-primary: #0F7B6C;
+  --color-primary-light: #14A891;
+  --color-primary-dark: #0A5C51;
+  --color-accent: #E94560;
+  --color-surface: #0A0A0B;
+  --color-surface-alt: #111113;
+  --color-surface-elevated: #1A1A1E;
+  --color-border: #2A2A30;
+  --color-text: #E5E5E5;
+  --color-text-muted: #9CA3AF;
+  --color-text-dim: #6B7280;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+}
+
+/* ── Base ── */
+body {
+  @apply bg-surface text-text antialiased;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}

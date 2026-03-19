@@ -1,0 +1,96 @@
+{
+  "app": {
+    "title": "FretLabs",
+    "tagline": "Diseñador profesional de diapasones"
+  },
+  "nav": {
+    "design": "Diseño",
+    "table": "Tabla de trastes",
+    "export": "Exportar"
+  },
+  "panel": {
+    "preset": {
+      "label": "Preset de instrumento",
+      "placeholder": "Seleccionar preset...",
+      "category": {
+        "guitar": "Guitarras",
+        "bass": "Bajos",
+        "other": "Otros"
+      }
+    },
+    "scaleLength": {
+      "label": "Scale Length",
+      "mode": {
+        "single": "Single",
+        "multi": "Multi-scale",
+        "individual": "Individual"
+      },
+      "fundamental": "Scale length fundamental",
+      "first": "Scale length primera cuerda",
+      "last": "Scale length última cuerda",
+      "perpendicular": "Perpendicular fret distance"
+    },
+    "strings": {
+      "label": "Cuerdas",
+      "count": "Cantidad de cuerdas",
+      "nutWidth": "Ancho en la cejilla",
+      "bridgeWidth": "Ancho en el puente",
+      "spacing": {
+        "label": "Espaciado de cuerdas",
+        "equal": "Uniforme",
+        "proportional": "Proporcional"
+      },
+      "gauges": "Calibres de cuerdas"
+    },
+    "frets": {
+      "label": "Trastes",
+      "count": "Cantidad de trastes"
+    },
+    "calculation": {
+      "label": "Método de cálculo",
+      "equal": "Equal (raíz de 2)",
+      "scala": "Just / Microtonal (Scala)",
+      "tonesPerOctave": "Tonos por octava",
+      "scalaInput": "Pegar contenido Scala SCL",
+      "tuning": "Afinación (pasos de escala por cuerda)"
+    },
+    "units": {
+      "label": "Unidades"
+    }
+  },
+  "preview": {
+    "title": "Vista previa del diapasón",
+    "options": {
+      "showEdges": "Mostrar bordes del diapasón",
+      "showStrings": "Mostrar cuerdas",
+      "extendFrets": "Extender trastes al borde"
+    }
+  },
+  "table": {
+    "title": "Posiciones de trastes",
+    "fret": "Traste",
+    "distanceFromNut": "Distancia desde la cejilla",
+    "distanceFromPrevious": "Desde el traste anterior",
+    "copy": "Copiar tabla",
+    "copied": "¡Copiado!"
+  },
+  "export": {
+    "title": "Exportar",
+    "svg": "Descargar SVG",
+    "dxf": "Descargar DXF (CNC)",
+    "csv": "Descargar CSV",
+    "pdf": "Descargar PDF"
+  },
+  "errors": {
+    "invalidScala": "Archivo Scala inválido. Verificá que la cantidad de intervalos coincida con lo declarado.",
+    "invalidNumber": "Ingresá un número válido.",
+    "outOfRange": "El valor debe estar entre {min} y {max}.",
+    "minStrings": "Se requiere al menos 1 cuerda.",
+    "minFrets": "Se requiere al menos 1 traste."
+  },
+  "language": {
+    "label": "Idioma",
+    "en": "English",
+    "es": "Español"
+  }
+}

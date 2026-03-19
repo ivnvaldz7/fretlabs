@@ -1,0 +1,96 @@
+{
+  "app": {
+    "title": "FretLabs",
+    "tagline": "Professional fretboard designer"
+  },
+  "nav": {
+    "design": "Design",
+    "table": "Fret Table",
+    "export": "Export"
+  },
+  "panel": {
+    "preset": {
+      "label": "Instrument Preset",
+      "placeholder": "Select a preset...",
+      "category": {
+        "guitar": "Guitars",
+        "bass": "Bass",
+        "other": "Other"
+      }
+    },
+    "scaleLength": {
+      "label": "Scale Length",
+      "mode": {
+        "single": "Single",
+        "multi": "Multi-scale",
+        "individual": "Individual"
+      },
+      "fundamental": "Fundamental scale length",
+      "first": "First string scale length",
+      "last": "Last string scale length",
+      "perpendicular": "Perpendicular fret distance"
+    },
+    "strings": {
+      "label": "Strings",
+      "count": "Number of strings",
+      "nutWidth": "String width at nut",
+      "bridgeWidth": "String width at bridge",
+      "spacing": {
+        "label": "String spacing",
+        "equal": "Equal",
+        "proportional": "Proportional"
+      },
+      "gauges": "String gauges"
+    },
+    "frets": {
+      "label": "Frets",
+      "count": "Number of frets"
+    },
+    "calculation": {
+      "label": "Calculation Method",
+      "equal": "Equal (root 2)",
+      "scala": "Just / Microtonal (Scala)",
+      "tonesPerOctave": "Tones per octave",
+      "scalaInput": "Paste Scala SCL content",
+      "tuning": "Tuning (scale steps per string)"
+    },
+    "units": {
+      "label": "Units"
+    }
+  },
+  "preview": {
+    "title": "Fretboard Preview",
+    "options": {
+      "showEdges": "Show fretboard edges",
+      "showStrings": "Show strings",
+      "extendFrets": "Extend frets to edge"
+    }
+  },
+  "table": {
+    "title": "Fret Positions",
+    "fret": "Fret",
+    "distanceFromNut": "Distance from nut",
+    "distanceFromPrevious": "From previous fret",
+    "copy": "Copy table",
+    "copied": "Copied!"
+  },
+  "export": {
+    "title": "Export",
+    "svg": "Download SVG",
+    "dxf": "Download DXF (CNC)",
+    "csv": "Download CSV",
+    "pdf": "Download PDF"
+  },
+  "errors": {
+    "invalidScala": "Invalid Scala file. Check that the number of intervals matches the declared count.",
+    "invalidNumber": "Please enter a valid number.",
+    "outOfRange": "Value must be between {min} and {max}.",
+    "minStrings": "At least 1 string is required.",
+    "minFrets": "At least 1 fret is required."
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "es": "Español"
+  }
+}
