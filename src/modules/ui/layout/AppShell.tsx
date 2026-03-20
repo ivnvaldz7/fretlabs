@@ -1,18 +1,144 @@
+/**
+ * AppShell — main application layout.
+ *
+ * Desktop (md+): sidebar (left) + main preview area (right).
+ * Mobile (<md):  all panels stacked vertically (collapsible), preview below.
+ */
+
+import { useState } from 'react';
+import { useFretboard } from '../../../hooks/useFretboard';
+import { FretboardSVG } from '../../renderer/FretboardSVG';
+import {
+  DEFAULT_DISPLAY_OPTIONS,
+  type FretboardDisplayOptions,
+} from '../../renderer/types';
+import { PresetSelector } from '../panels/PresetSelector';
+import { ScaleLengthPanel } from '../panels/ScaleLengthPanel';
+import { StringsPanel } from '../panels/StringsPanel';
+import { CalculationPanel } from '../panels/CalculationPanel';
+import { ExportMenu } from '../export/ExportMenu';
 import { useLocale } from '../../../hooks/useLocale';
 import type { Locale } from '../../../i18n';
+import type { Unit } from '../../../config/constants';
+
+const UNITS: Unit[] = ['mm', 'in', 'cm'];
+
+type SectionKey = 'preset' | 'scaleLength' | 'strings' | 'calculation' | 'frets' | 'export';
+
+/** Chevron icon — rotates when open */
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`h-4 w-4 flex-none text-text-muted transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="4 6 8 10 12 6" />
+    </svg>
+  );
+}
+
+/**
+ * Collapsible section wrapper.
+ * On mobile: shows a tappable header that expands/collapses the content.
+ * On desktop (md+): header is hidden, content always visible.
+ */
+function Section({
+  sectionKey,
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  sectionKey: SectionKey;
+  title: string;
+  open: boolean;
+  onToggle: (key: SectionKey) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-b border-border md:border-none">
+      {/* Mobile toggle header — hidden on desktop */}
+      <button
+        type="button"
+        onClick={() => onToggle(sectionKey)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left md:hidden"
+      >
+        <span className="text-xs font-semibold uppercase tracking-wider text-text-dim">
+          {title}
+        </span>
+        <Chevron open={open} />
+      </button>
+
+      {/* Content: conditionally shown on mobile, always shown on desktop.
+          On mobile, hide internal panel <h3> headings — the Section button above
+          already provides the section title. On desktop the button is hidden so
+          the panel's own <h3> shows as normal. */}
+      <div
+        className={`px-4 pb-4 md:block md:px-0 md:pb-0 [&>section>h3]:hidden md:[&>section>h3]:block [&>div>section>h3]:hidden md:[&>div>section>h3]:block ${open ? 'block' : 'hidden'}`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export function AppShell() {
   const { t, locale, setLocale } = useLocale();
 
+  const {
+    config,
+    result,
+    error,
+    updateScaleLength,
+    updateStrings,
+    updateCalculation,
+    setNumFrets,
+    setUnit,
+    applyPreset,
+  } = useFretboard();
+
+  const [displayOptions, setDisplayOptions] =
+    useState<FretboardDisplayOptions>(DEFAULT_DISPLAY_OPTIONS);
+
+  // Which sections are expanded on mobile. Desktop always shows all.
+  const [openSections, setOpenSections] = useState<Set<SectionKey>>(
+    new Set(['scaleLength']),
+  );
+
+  const toggleSection = (key: SectionKey) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const isOpen = (key: SectionKey) => openSections.has(key);
+
+  const toggleDisplayOption = (key: keyof FretboardDisplayOptions) => {
+    setDisplayOptions((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const inputCls =
+    'w-full rounded border border-border bg-surface-elevated px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none';
+  const labelCls = 'mb-0.5 block text-xs text-text-muted';
+
   return (
-    <div className="min-h-screen bg-surface text-text">
-      <header className="flex items-center justify-between border-b border-border px-6 py-4">
+    <div className="flex h-screen flex-col bg-surface text-text">
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <header className="flex flex-none items-center justify-between border-b border-border px-4 py-3 md:px-6">
         <div>
-          <h1 className="text-xl font-bold text-primary">{t('app.title')}</h1>
-          <p className="text-sm text-text-muted">{t('app.tagline')}</p>
+          <h1 className="text-lg font-bold text-primary">{t('app.title')}</h1>
+          <p className="text-xs text-text-dim">{t('app.tagline')}</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-text-dim">{t('language.label')}</span>
+          <span className="hidden text-xs text-text-dim md:inline">{t('language.label')}</span>
           <select
             value={locale}
             onChange={(e) => setLocale(e.target.value as Locale)}
@@ -24,25 +150,135 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="flex items-center justify-center p-12">
-        <div className="text-center">
-          <div className="mb-4 text-6xl">🎸</div>
-          <h2 className="mb-2 text-2xl font-bold">{t('app.title')}</h2>
-          <p className="text-text-muted">
-            Scaffold ready. Start building modules.
-          </p>
-          <div className="mt-8 rounded-lg border border-border bg-surface-alt p-6 text-left text-sm">
-            <p className="mb-2 font-mono text-primary">Next steps:</p>
-            <ul className="space-y-1 text-text-muted">
-              <li>→ Implement calculator/engine.ts</li>
-              <li>→ Build FretboardSVG renderer</li>
-              <li>→ Create input panels</li>
-              <li>→ Wire up useFretboard hook</li>
-              <li>→ Add export functionality</li>
-            </ul>
+      {/* ── Body ───────────────────────────────────────────────────────── */}
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+
+        {/* ── Sidebar / Panel stack ──────────────────────────────────── */}
+        <aside className="flex-none overflow-y-auto border-b border-border md:w-72 md:border-b-0 md:border-r md:p-4">
+
+          {/* Unit selector — always visible, not collapsible */}
+          <div className="flex items-center justify-between border-b border-border px-4 py-3 md:mb-4 md:border-none md:px-0 md:py-0">
+            <span className="text-xs font-semibold uppercase tracking-wider text-text-dim">
+              {t('panel.units.label')}
+            </span>
+            <div className="flex overflow-hidden rounded border border-border">
+              {UNITS.map((u) => (
+                <button
+                  key={u}
+                  onClick={() => setUnit(u)}
+                  className={`px-3 py-0.5 text-xs transition-colors ${
+                    config.unit === u
+                      ? 'bg-primary text-white'
+                      : 'bg-surface-elevated text-text-muted hover:text-text'
+                  }`}
+                >
+                  {u}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </main>
+
+          {/* Preset — collapsible on mobile */}
+          <Section sectionKey="preset" title={t('panel.preset.label')} open={isOpen('preset')} onToggle={toggleSection}>
+            <div className="md:mt-0">
+              <PresetSelector onSelect={applyPreset} />
+            </div>
+          </Section>
+
+          {/* Scale Length — collapsible on mobile, open by default */}
+          <Section sectionKey="scaleLength" title={t('panel.scaleLength.label')} open={isOpen('scaleLength')} onToggle={toggleSection}>
+            <ScaleLengthPanel
+              scaleLength={config.scaleLength}
+              numStrings={config.strings.count}
+              unit={config.unit}
+              onChange={updateScaleLength}
+            />
+          </Section>
+
+          {/* Strings — collapsible on mobile */}
+          <Section sectionKey="strings" title={t('panel.strings.label')} open={isOpen('strings')} onToggle={toggleSection}>
+            <StringsPanel
+              strings={config.strings}
+              unit={config.unit}
+              onChange={updateStrings}
+            />
+          </Section>
+
+          {/* Calculation — collapsible on mobile */}
+          <Section sectionKey="calculation" title={t('panel.calculation.label')} open={isOpen('calculation')} onToggle={toggleSection}>
+            <CalculationPanel
+              calculation={config.calculation}
+              onChange={updateCalculation}
+            />
+          </Section>
+
+          {/* Frets — collapsible on mobile */}
+          <Section sectionKey="frets" title={t('panel.frets.label')} open={isOpen('frets')} onToggle={toggleSection}>
+            <label className={labelCls}>{t('panel.frets.count')}</label>
+            <input
+              type="number"
+              min="1"
+              max="72"
+              step="1"
+              className={inputCls}
+              value={config.numFrets}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10);
+                if (!isNaN(n) && n >= 1) setNumFrets(n);
+              }}
+            />
+          </Section>
+
+          {/* Export — collapsible on mobile */}
+          <Section sectionKey="export" title={t('export.title')} open={isOpen('export')} onToggle={toggleSection}>
+            <ExportMenu result={result} unit={config.unit} />
+          </Section>
+        </aside>
+
+        {/* ── Main content ───────────────────────────────────────────── */}
+        <main className="flex flex-1 flex-col overflow-auto">
+          {/* Preview toolbar */}
+          <div className="flex flex-none items-center justify-between border-b border-border px-4 py-2 md:px-6">
+            <span className="text-sm font-medium text-text-muted">
+              {t('preview.title')}
+            </span>
+            <div className="flex items-center gap-3 md:gap-4">
+              {(
+                [
+                  ['showEdges', 'preview.options.showEdges'],
+                  ['showStrings', 'preview.options.showStrings'],
+                ] as [keyof FretboardDisplayOptions, string][]
+              ).map(([key, labelKey]) => (
+                <label
+                  key={key}
+                  className="flex cursor-pointer items-center gap-1.5 text-xs text-text-muted"
+                >
+                  <input
+                    type="checkbox"
+                    checked={displayOptions[key]}
+                    onChange={() => toggleDisplayOption(key)}
+                    className="accent-primary"
+                  />
+                  <span className="hidden sm:inline">{t(labelKey)}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* SVG preview area */}
+          <div className="flex flex-1 items-center justify-center p-4 md:p-8">
+            {error ? (
+              <div className="max-w-lg rounded border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+                {t(error)}
+              </div>
+            ) : result ? (
+              <div className="w-full max-w-5xl">
+                <FretboardSVG result={result} options={displayOptions} />
+              </div>
+            ) : null}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-import type { Unit } from './constants';
 
 export interface InstrumentPreset {
   /** Unique identifier */

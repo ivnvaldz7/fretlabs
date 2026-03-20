@@ -4,7 +4,7 @@
  * Conversion happens at the boundaries: input → mm → calculation → mm → display.
  */
 
-import { UNIT_TO_MM, UNIT_PRECISION, type Unit } from '../../config/constants';
+import { UNIT_TO_MM, UNIT_PRECISION, type Unit } from '../config/constants';
 
 /**
  * Convert a value from a given unit to mm.

@@ -1,4 +1,4 @@
-import { LIMITS } from '../../config/constants';
+import { LIMITS } from '../config/constants';
 
 export interface ValidationResult {
   valid: boolean;
