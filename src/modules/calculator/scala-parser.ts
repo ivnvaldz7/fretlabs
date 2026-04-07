@@ -173,6 +173,49 @@ export function scalaFretDistance(
 }
 
 /**
+ * Absolute ratio for an integer scale degree, where degree 0 is unison (1/1).
+ *
+ * This uses the same step/octave mapping as scalaFretDistance's fretNumber,
+ * except it includes degree 0.
+ */
+function ratioForDegree(degree: number, scale: ScalaScale): number {
+  if (degree <= 0) return 1;
+
+  const stepsPerOctave = scale.noteCount;
+  const octave = Math.floor((degree - 1) / stepsPerOctave);
+  const step = (degree - 1) % stepsPerOctave;
+
+  const octaveRatio = Math.pow(scale.ratios[stepsPerOctave - 1], octave);
+  const stepRatio = scale.ratios[step];
+  return octaveRatio * stepRatio;
+}
+
+/**
+ * Get fret distance from nut using a Scala scale with an open-string degree offset.
+ *
+ * openDegree is the scale degree that the open string represents:
+ * - 0 means unison/root
+ * - 1 means the string is tuned up to the first scale step, etc.
+ *
+ * The ratio for a fretted note is computed relative to the open string:
+ * ratio = absRatio(openDegree + fret) / absRatio(openDegree)
+ */
+export function scalaFretDistanceWithTuning(
+  scaleLengthMm: number,
+  fretNumber: number,
+  scale: ScalaScale,
+  openDegree: number,
+): number {
+  if (fretNumber === 0) return 0;
+
+  const open = ratioForDegree(openDegree, scale);
+  const fretted = ratioForDegree(openDegree + fretNumber, scale);
+  const relative = fretted / open;
+
+  return scaleLengthMm * (1 - 1 / relative);
+}
+
+/**
  * Calculate all fret distances for a Scala scale.
  */
 export function allScalaFretDistances(
@@ -186,5 +229,21 @@ export function allScalaFretDistances(
     distances.push(scalaFretDistance(scaleLengthMm, fret, scale));
   }
 
+  return distances;
+}
+
+/**
+ * Calculate all fret distances for a Scala scale, with an open-string degree offset.
+ */
+export function allScalaFretDistancesWithTuning(
+  scaleLengthMm: number,
+  numFrets: number,
+  scale: ScalaScale,
+  openDegree: number,
+): number[] {
+  const distances: number[] = [0];
+  for (let fret = 1; fret <= numFrets; fret++) {
+    distances.push(scalaFretDistanceWithTuning(scaleLengthMm, fret, scale, openDegree));
+  }
   return distances;
 }

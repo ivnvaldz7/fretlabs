@@ -42,6 +42,24 @@
       },
       "gauges": "String gauges"
     },
+    "overhang": {
+      "label": "Overhang",
+      "mode": {
+        "equal": "Equal",
+        "nutBridge": "Nut & Bridge",
+        "firstLast": "First & Last",
+        "all": "All"
+      },
+      "equal": "Overhang",
+      "nut": "Nut overhang",
+      "bridge": "Bridge overhang",
+      "first": "First string side",
+      "last": "Last string side",
+      "nutFirst": "Nut, first side",
+      "nutLast": "Nut, last side",
+      "bridgeFirst": "Bridge, first side",
+      "bridgeLast": "Bridge, last side"
+    },
     "frets": {
       "label": "Frets",
       "count": "Number of frets"
@@ -56,6 +74,38 @@
     },
     "units": {
       "label": "Units"
+    }
+  },
+  "help": {
+    "units": {
+      "about": "Changes only how values are shown. All calculations run internally in mm."
+    },
+    "frets": {
+      "count": "Number of frets to calculate, draw, and export."
+    },
+    "scaleLength": {
+      "fundamental": "Nut-to-bridge scale length for the reference string.",
+      "first": "Scale length on the first-string side (usually treble).",
+      "last": "Scale length on the last-string side (usually bass).",
+      "perpendicular": "Where the frets are perpendicular to the centerline: 0 = nut, 1 = bridge."
+    },
+    "strings": {
+      "count": "Total strings for spacing and per-string calculations.",
+      "nutWidth": "Outer-string spread at the nut (center-to-center of string 1 to string N).",
+      "bridgeWidth": "Outer-string spread at the bridge (center-to-center of string 1 to string N).",
+      "spacing": "Equal uses uniform gaps. Proportional adjusts gaps based on string gauge.",
+      "gauges": "String gauges in inches, used only for proportional spacing."
+    },
+    "overhang": {
+      "about": "Distance from the outer string center to the fretboard edge."
+    },
+    "calculation": {
+      "tonesPerOctave": "12 is standard. Use other values for equal temperament (19, 24, 31...).",
+      "scalaInput": "Paste a .scl file. The interval count must match the declared number.",
+      "tuning": "For Scala: which scale step each string uses as its open string (0 = unison)."
+    },
+    "export": {
+      "extendFrets": "Extends fret lines to the fretboard outline for cleaner CNC/print exports."
     }
   },
   "preview": {
@@ -92,5 +142,9 @@
     "label": "Language",
     "en": "English",
     "es": "Español"
+  },
+  "url": {
+    "loaded": "Loaded design from share link.",
+    "invalid": "Invalid share link. Loaded defaults instead."
   }
 }

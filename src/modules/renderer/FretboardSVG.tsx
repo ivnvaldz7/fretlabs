@@ -18,6 +18,7 @@
 import type { FretboardResult } from '../calculator/types';
 import type { FretboardDisplayOptions } from './types';
 import { computeSvgViewport } from './geometry';
+import { extendSegmentToOutline } from '../../utils/extend-line-to-outline';
 
 // ── Visual constants ────────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ interface FretboardSVGProps {
  * @param className - Optional CSS class for the <svg> element
  */
 export function FretboardSVG({ result, options, className }: FretboardSVGProps) {
-  const { showStrings, showEdges } = options;
+  const { showStrings, showEdges, extendFrets } = options;
   const vp = computeSvgViewport(result);
 
   const { fretLines, strings: stringLines, outline } = result;
@@ -86,15 +87,18 @@ export function FretboardSVG({ result, options, className }: FretboardSVGProps) 
       {/* Layer 2: Fret lines
           Fret 0 is the nut — rendered thicker and in a distinct color.
           All other frets are standard nickel-silver lines. */}
-      {fretLines.map((fl) => {
+      {fretLines.map((fl, idx) => {
         const isNut = fl.fret === 0;
+        const seg = extendFrets
+          ? extendSegmentToOutline(fl.x1, fl.y1, fl.x2, fl.y2, outline)
+          : { x1: fl.x1, y1: fl.y1, x2: fl.x2, y2: fl.y2 };
         return (
           <line
-            key={fl.fret}
-            x1={fl.x1}
-            y1={fl.y1}
-            x2={fl.x2}
-            y2={fl.y2}
+            key={`${fl.fret}-${idx}`}
+            x1={seg.x1}
+            y1={seg.y1}
+            x2={seg.x2}
+            y2={seg.y2}
             stroke={isNut ? COLOR_NUT : COLOR_FRET}
             strokeWidth={isNut ? STROKE_NUT_MM : STROKE_FRET_MM}
             strokeLinecap="round"

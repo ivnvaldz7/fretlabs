@@ -42,6 +42,24 @@
       },
       "gauges": "Calibres de cuerdas"
     },
+    "overhang": {
+      "label": "Overhang",
+      "mode": {
+        "equal": "Equal",
+        "nutBridge": "Nut & Bridge",
+        "firstLast": "First & Last",
+        "all": "All"
+      },
+      "equal": "Overhang",
+      "nut": "Overhang en cejilla",
+      "bridge": "Overhang en puente",
+      "first": "Lado primera cuerda",
+      "last": "Lado ultima cuerda",
+      "nutFirst": "Cejilla, lado primera",
+      "nutLast": "Cejilla, lado ultima",
+      "bridgeFirst": "Puente, lado primera",
+      "bridgeLast": "Puente, lado ultima"
+    },
     "frets": {
       "label": "Trastes",
       "count": "Cantidad de trastes"
@@ -56,6 +74,38 @@
     },
     "units": {
       "label": "Unidades"
+    }
+  },
+  "help": {
+    "units": {
+      "about": "Solo cambia como se muestran los valores. Internamente todo se calcula en mm."
+    },
+    "frets": {
+      "count": "Cantidad de trastes a calcular, dibujar y exportar."
+    },
+    "scaleLength": {
+      "fundamental": "Scale length desde cejilla hasta puente para la cuerda de referencia.",
+      "first": "Scale length del lado de la primera cuerda (normalmente agudos).",
+      "last": "Scale length del lado de la ultima cuerda (normalmente graves).",
+      "perpendicular": "Donde los trastes quedan perpendiculares al centerline: 0 = cejilla, 1 = puente."
+    },
+    "strings": {
+      "count": "Cantidad total de cuerdas para el espaciado y calculos por cuerda.",
+      "nutWidth": "Ancho entre cuerdas externas en la cejilla (centro a centro de cuerda 1 a cuerda N).",
+      "bridgeWidth": "Ancho entre cuerdas externas en el puente (centro a centro de cuerda 1 a cuerda N).",
+      "spacing": "Uniforme usa gaps iguales. Proporcional ajusta gaps segun el calibre.",
+      "gauges": "Calibres en pulgadas, solo se usan para espaciado proporcional."
+    },
+    "overhang": {
+      "about": "Distancia desde el centro de la cuerda externa hasta el borde del diapason."
+    },
+    "calculation": {
+      "tonesPerOctave": "12 es el estandar. Usa otros valores para equal temperament (19, 24, 31...).",
+      "scalaInput": "Pega un archivo .scl. La cantidad de intervalos debe coincidir con lo declarado.",
+      "tuning": "Para Scala: que paso de escala usa cada cuerda al aire (0 = unisono)."
+    },
+    "export": {
+      "extendFrets": "Extiende los trastes hasta el contorno del diapason para export/impresion mas limpios."
     }
   },
   "preview": {
@@ -92,5 +142,9 @@
     "label": "Idioma",
     "en": "English",
     "es": "Español"
+  },
+  "url": {
+    "loaded": "Diseño cargado desde link compartido.",
+    "invalid": "Link compartido inválido. Se cargaron los valores por defecto."
   }
 }

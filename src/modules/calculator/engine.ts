@@ -17,7 +17,7 @@
  */
 
 import { allFretDistances } from './equal-temperament';
-import { parseScala, allScalaFretDistances } from './scala-parser';
+import { parseScala, allScalaFretDistances, allScalaFretDistancesWithTuning } from './scala-parser';
 import type { ScalaScale } from './scala-parser';
 import { calculateStringPositions, gaugesInchesToMm } from './string-spacing';
 import type {
@@ -28,6 +28,7 @@ import type {
   StringLine,
   FretboardOutline,
   CalculationMeta,
+  OverhangConfig,
 } from './types';
 import { LIMITS } from '../../config/constants';
 
@@ -52,7 +53,7 @@ export class CalculationError extends Error {
  * @throws CalculationError for invalid inputs
  */
 function validateConfig(config: FretboardConfig): void {
-  const { numFrets, strings, scaleLength, calculation } = config;
+  const { numFrets, strings, scaleLength, calculation, overhang } = config;
 
   if (numFrets < LIMITS.MIN_FRETS || numFrets > LIMITS.MAX_FRETS) {
     throw new CalculationError(
@@ -129,6 +130,92 @@ function validateConfig(config: FretboardConfig): void {
       'Scala method requires scalaContent to be set',
     );
   }
+
+  if (calculation.method === 'scala' && calculation.tuning) {
+    if (calculation.tuning.length < strings.count) {
+      throw new CalculationError(
+        'Scala tuning must provide one value per string',
+        `Received ${calculation.tuning.length} values for ${strings.count} strings`,
+      );
+    }
+    for (let i = 0; i < strings.count; i++) {
+      const v = calculation.tuning[i];
+      if (!Number.isFinite(v) || v < 0 || !Number.isInteger(v)) {
+        throw new CalculationError(
+          'Scala tuning values must be non-negative integers (scale degrees)',
+          `tuning[${i}] = ${String(v)}`,
+        );
+      }
+    }
+  }
+
+  if (overhang) {
+    const values: Array<[string, number | undefined]> = [
+      ['equalMm', overhang.equalMm],
+      ['nutMm', overhang.nutMm],
+      ['bridgeMm', overhang.bridgeMm],
+      ['firstMm', overhang.firstMm],
+      ['lastMm', overhang.lastMm],
+      ['nutFirstMm', overhang.nutFirstMm],
+      ['nutLastMm', overhang.nutLastMm],
+      ['bridgeFirstMm', overhang.bridgeFirstMm],
+      ['bridgeLastMm', overhang.bridgeLastMm],
+    ];
+
+    for (const [key, v] of values) {
+      if (v === undefined) continue;
+      if (
+        !Number.isFinite(v) ||
+        v < LIMITS.MIN_OVERHANG_MM ||
+        v > LIMITS.MAX_OVERHANG_MM
+      ) {
+        throw new CalculationError(
+          `Overhang value out of range for ${key}`,
+          `Expected ${LIMITS.MIN_OVERHANG_MM}..${LIMITS.MAX_OVERHANG_MM}mm, received: ${String(v)}`,
+        );
+      }
+    }
+  }
+}
+
+function resolveOverhangCornersMm(
+  overhang: OverhangConfig | undefined,
+): { nutFirstMm: number; nutLastMm: number; bridgeFirstMm: number; bridgeLastMm: number } {
+  if (!overhang) {
+    return { nutFirstMm: 0, nutLastMm: 0, bridgeFirstMm: 0, bridgeLastMm: 0 };
+  }
+
+  const eq = overhang.equalMm ?? 0;
+
+  if (overhang.mode === 'equal') {
+    return { nutFirstMm: eq, nutLastMm: eq, bridgeFirstMm: eq, bridgeLastMm: eq };
+  }
+
+  if (overhang.mode === 'nutBridge') {
+    const nut = overhang.nutMm ?? eq;
+    const bridge = overhang.bridgeMm ?? eq;
+    return { nutFirstMm: nut, nutLastMm: nut, bridgeFirstMm: bridge, bridgeLastMm: bridge };
+  }
+
+  if (overhang.mode === 'firstLast') {
+    const first = overhang.firstMm ?? eq;
+    const last = overhang.lastMm ?? eq;
+    return { nutFirstMm: first, nutLastMm: last, bridgeFirstMm: first, bridgeLastMm: last };
+  }
+
+  // all
+  return {
+    nutFirstMm: overhang.nutFirstMm ?? overhang.firstMm ?? overhang.nutMm ?? eq,
+    nutLastMm: overhang.nutLastMm ?? overhang.lastMm ?? overhang.nutMm ?? eq,
+    bridgeFirstMm: overhang.bridgeFirstMm ?? overhang.firstMm ?? overhang.bridgeMm ?? eq,
+    bridgeLastMm: overhang.bridgeLastMm ?? overhang.lastMm ?? overhang.bridgeMm ?? eq,
+  };
+}
+
+function normalize(dx: number, dy: number): { x: number; y: number } {
+  const len = Math.hypot(dx, dy);
+  if (len === 0) return { x: 0, y: 0 };
+  return { x: dx / len, y: dy / len };
 }
 
 /**
@@ -250,6 +337,7 @@ function computeStringEndpoints(
  * @throws CalculationError for unsupported methods
  */
 function computeFretDistances(
+  stringIndex: number,
   scaleLengthMm: number,
   config: FretboardConfig,
   scalaScale: ScalaScale | null,
@@ -262,8 +350,13 @@ function computeFretDistances(
   }
 
   if (calculation.method === 'scala') {
-    // Ratio-based positions from the parsed Scala scale
-    return allScalaFretDistances(scaleLengthMm, numFrets, scalaScale as ScalaScale);
+    const scale = scalaScale as ScalaScale;
+    const openDegree = calculation.tuning?.[stringIndex] ?? 0;
+    if (openDegree === 0) {
+      // Fast path for the common case
+      return allScalaFretDistances(scaleLengthMm, numFrets, scale);
+    }
+    return allScalaFretDistancesWithTuning(scaleLengthMm, numFrets, scale, openDegree);
   }
 
   throw new CalculationError(
@@ -306,8 +399,8 @@ export function calculateFretboard(config: FretboardConfig): FretboardResult {
 
   // ── Step 4: Compute fret distances per string ────────────────────────────
   // distancesPerString[stringIndex][fretIndex] = distance from nut in mm
-  const distancesPerString: number[][] = scaleLengths.map((si) =>
-    computeFretDistances(si, config, scalaScale),
+  const distancesPerString: number[][] = scaleLengths.map((si, stringIndex) =>
+    computeFretDistances(stringIndex, si, config, scalaScale),
   );
 
   // ── Step 5: Build StringLine array ───────────────────────────────────────
@@ -360,32 +453,144 @@ export function calculateFretboard(config: FretboardConfig): FretboardResult {
   }
 
   // ── Step 7: Build FretLine array ─────────────────────────────────────────
-  // Each fret line connects string 0 to string N-1 at the same fret number.
-  // With the index formula above we can look them up directly.
+  // Default: each fret line connects string 0 to string N-1 at the same fret number.
+  //
+  // For Scala with per-string tuning offsets, frets are grouped by absolute
+  // scale degree. This produces partial frets at the extremes when some strings
+  // don't have a given degree within their 0..numFrets range.
   const fretsPerString = numFrets + 1;
   const fretLines: FretLine[] = [];
 
-  for (let fn = 0; fn <= numFrets; fn++) {
-    // Index in fretPositions for (string=0, fret=fn) and (string=last, fret=fn)
-    const firstPos = fretPositions[0 * fretsPerString + fn];
-    const lastPos = fretPositions[(numStrings - 1) * fretsPerString + fn];
+  const tuning = (calculation.method === 'scala' && calculation.tuning)
+    ? calculation.tuning.slice(0, numStrings)
+    : Array<number>(numStrings).fill(0);
 
-    fretLines.push({
-      fret: fn,
-      x1: firstPos.x,
-      y1: firstPos.y,
-      x2: lastPos.x,
-      y2: lastPos.y,
-      isPartial: false,
-    });
+  const tuningVaries =
+    calculation.method === 'scala' && tuning.some((v) => v !== tuning[0]);
+
+  if (!tuningVaries) {
+    for (let fn = 0; fn <= numFrets; fn++) {
+      const firstPos = fretPositions[0 * fretsPerString + fn];
+      const lastPos = fretPositions[(numStrings - 1) * fretsPerString + fn];
+
+      fretLines.push({
+        fret: fn,
+        x1: firstPos.x,
+        y1: firstPos.y,
+        x2: lastPos.x,
+        y2: lastPos.y,
+        isPartial: false,
+      });
+    }
+  } else {
+    // Nut is always a full-width line at fn=0 for every string.
+    {
+      const firstPos = fretPositions[0 * fretsPerString + 0];
+      const lastPos = fretPositions[(numStrings - 1) * fretsPerString + 0];
+      fretLines.push({
+        fret: 0,
+        x1: firstPos.x,
+        y1: firstPos.y,
+        x2: lastPos.x,
+        y2: lastPos.y,
+        isPartial: false,
+      });
+    }
+
+    const minOpen = Math.min(...tuning);
+    const maxOpen = Math.max(...tuning);
+    const minDegree = minOpen + 1;
+    const maxDegree = maxOpen + numFrets;
+
+    for (let degree = minDegree; degree <= maxDegree; degree++) {
+      // Build segments for each contiguous run of strings that contain this degree.
+      // A string contains 'degree' iff fn = degree - tuning[string] is in [1..numFrets].
+      let presentCount = 0;
+      let runStart: number | null = null;
+
+      const flushRun = (runEndInclusive: number) => {
+        if (runStart === null) return;
+        const len = runEndInclusive - runStart + 1;
+        if (len < 2) {
+          runStart = null;
+          return;
+        }
+
+        const firstFn = degree - tuning[runStart];
+        const lastFn = degree - tuning[runEndInclusive];
+
+        const firstPos = fretPositions[runStart * fretsPerString + firstFn];
+        const lastPos = fretPositions[runEndInclusive * fretsPerString + lastFn];
+
+        fretLines.push({
+          fret: degree,
+          x1: firstPos.x,
+          y1: firstPos.y,
+          x2: lastPos.x,
+          y2: lastPos.y,
+          isPartial: true, // upgraded to false below if it spans all strings
+        });
+
+        runStart = null;
+      };
+
+      for (let si = 0; si < numStrings; si++) {
+        const fn = degree - tuning[si];
+        const present = fn >= 1 && fn <= numFrets;
+        if (present) {
+          presentCount++;
+          if (runStart === null) runStart = si;
+        } else {
+          flushRun(si - 1);
+        }
+      }
+      flushRun(numStrings - 1);
+
+      // If the degree spans all strings, mark every segment as non-partial
+      // (there will be exactly one segment in that case).
+      if (presentCount === numStrings) {
+        const last = fretLines[fretLines.length - 1];
+        if (last && last.fret === degree) last.isPartial = false;
+      }
+    }
   }
 
   // ── Step 8: Build FretboardOutline ───────────────────────────────────────
-  const outline: FretboardOutline = {
+  const baseOutline: FretboardOutline = {
     nutFirst: { x: endpoints[0].nutX, y: endpoints[0].nutY },
     nutLast: { x: endpoints[numStrings - 1].nutX, y: endpoints[numStrings - 1].nutY },
     bridgeFirst: { x: endpoints[0].bridgeX, y: endpoints[0].bridgeY },
     bridgeLast: { x: endpoints[numStrings - 1].bridgeX, y: endpoints[numStrings - 1].bridgeY },
+  };
+
+  const corners = resolveOverhangCornersMm(config.overhang);
+
+  const nutDir = normalize(
+    baseOutline.nutLast.x - baseOutline.nutFirst.x,
+    baseOutline.nutLast.y - baseOutline.nutFirst.y,
+  );
+  const bridgeDir = normalize(
+    baseOutline.bridgeLast.x - baseOutline.bridgeFirst.x,
+    baseOutline.bridgeLast.y - baseOutline.bridgeFirst.y,
+  );
+
+  const outline: FretboardOutline = {
+    nutFirst: {
+      x: baseOutline.nutFirst.x - nutDir.x * corners.nutFirstMm,
+      y: baseOutline.nutFirst.y - nutDir.y * corners.nutFirstMm,
+    },
+    nutLast: {
+      x: baseOutline.nutLast.x + nutDir.x * corners.nutLastMm,
+      y: baseOutline.nutLast.y + nutDir.y * corners.nutLastMm,
+    },
+    bridgeFirst: {
+      x: baseOutline.bridgeFirst.x - bridgeDir.x * corners.bridgeFirstMm,
+      y: baseOutline.bridgeFirst.y - bridgeDir.y * corners.bridgeFirstMm,
+    },
+    bridgeLast: {
+      x: baseOutline.bridgeLast.x + bridgeDir.x * corners.bridgeLastMm,
+      y: baseOutline.bridgeLast.y + bridgeDir.y * corners.bridgeLastMm,
+    },
   };
 
   // ── Step 9: Build metadata ────────────────────────────────────────────────

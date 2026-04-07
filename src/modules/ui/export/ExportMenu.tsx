@@ -13,10 +13,12 @@ import { useState } from 'react';
 import { exportSvg } from '../../exporter/svg-export';
 import { exportDxf } from '../../exporter/dxf-export';
 import { exportCsv } from '../../exporter/csv-export';
+import { exportPdfHtml } from '../../exporter/pdf-export';
 import type { FretboardResult } from '../../calculator/types';
 import type { ExportOptions } from '../../exporter/types';
 import type { Unit } from '../../../config/constants';
 import { useLocale } from '../../../hooks/useLocale';
+import { HelpTip } from '../display/HelpTip';
 
 interface ExportMenuProps {
   result: FretboardResult | null;
@@ -39,7 +41,7 @@ function downloadFile(content: string, filename: string, mimeType: string): void
   URL.revokeObjectURL(url);
 }
 
-type FormatKey = 'svg' | 'dxf' | 'csv';
+type FormatKey = 'svg' | 'dxf' | 'csv' | 'pdf';
 
 /**
  * Export menu with SVG, DXF, and CSV download buttons.
@@ -51,8 +53,9 @@ export function ExportMenu({ result, unit }: ExportMenuProps) {
   const { t } = useLocale();
   // Track which button is in a transient "success" state
   const [successKey, setSuccessKey] = useState<FormatKey | null>(null);
+  const [extendFrets, setExtendFrets] = useState(false);
 
-  const options: ExportOptions = { format: 'svg', unit, layers: true };
+  const options: ExportOptions = { format: 'svg', unit, layers: true, extendFrets };
 
   const handleExport = (format: FormatKey) => {
     if (!result) return;
@@ -70,9 +73,22 @@ export function ExportMenu({ result, unit }: ExportMenuProps) {
       filename = 'fretlabs-design.dxf';
       mimeType = 'application/dxf';
     } else {
-      content = exportCsv(result, { ...options, format: 'csv' });
-      filename = 'fretlabs-positions.csv';
-      mimeType = 'text/csv';
+      if (format === 'csv') {
+        content = exportCsv(result, { ...options, format: 'csv' });
+        filename = 'fretlabs-positions.csv';
+        mimeType = 'text/csv';
+      } else {
+        // Print-to-PDF: open a new window with HTML + SVG and trigger print.
+        const html = exportPdfHtml(result, { ...options, format: 'pdf' });
+        const w = window.open('', '_blank', 'noopener,noreferrer');
+        if (!w) return;
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+        setSuccessKey('pdf');
+        setTimeout(() => setSuccessKey(null), 1500);
+        return;
+      }
     }
 
     downloadFile(content, filename, mimeType);
@@ -86,6 +102,7 @@ export function ExportMenu({ result, unit }: ExportMenuProps) {
     { key: 'svg', label: t('export.svg'), successLabel: '✓ SVG' },
     { key: 'dxf', label: t('export.dxf'), successLabel: '✓ DXF' },
     { key: 'csv', label: t('export.csv'), successLabel: '✓ CSV' },
+    { key: 'pdf', label: t('export.pdf'), successLabel: '✓ PDF' },
   ];
 
   const disabled = result === null;
@@ -95,6 +112,18 @@ export function ExportMenu({ result, unit }: ExportMenuProps) {
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-dim">
         {t('export.title')}
       </h3>
+      <label className="mb-2 flex cursor-pointer items-center gap-2 text-xs text-text-muted">
+        <input
+          type="checkbox"
+          className="accent-primary"
+          checked={extendFrets}
+          onChange={() => setExtendFrets((v) => !v)}
+        />
+        <span className="inline-flex items-center">
+          {t('preview.options.extendFrets')}
+          <HelpTip text={t('help.export.extendFrets')} />
+        </span>
+      </label>
       <div className="flex flex-col gap-1.5">
         {buttons.map(({ key, label, successLabel }) => {
           const isSuccess = successKey === key;

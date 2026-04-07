@@ -18,6 +18,7 @@ import type { FretboardResult } from '../calculator/types';
 import type { ExportOptions } from './types';
 import { fromMm } from '../../utils/unit-converter';
 import type { Unit } from '../../config/constants';
+import { extendSegmentToOutline } from '../../utils/extend-line-to-outline';
 
 // ── $INSUNITS values ─────────────────────────────────────────────────────────
 // 1 = Inches, 4 = Millimeters, 5 = Centimeters
@@ -188,6 +189,7 @@ function buildClosedPolyline(
 function buildEntities(result: FretboardResult, options: ExportOptions): string {
   const { unit } = options;
   const useLayers = options.layers !== false;
+  const extendFrets = options.extendFrets === true;
 
   const layerOutline = useLayers ? 'OUTLINE' : '0';
   const layerFrets = useLayers ? 'FRETS' : '0';
@@ -203,9 +205,12 @@ function buildEntities(result: FretboardResult, options: ExportOptions): string 
   );
 
   // ── Frets: one LINE per fret (fret 0 = nut) ──────────────────────────────
-  const fretEntities = result.fretLines.map((fl) =>
-    buildLine(fl.x1, fl.y1, fl.x2, fl.y2, layerFrets, unit),
-  ).join('');
+  const fretEntities = result.fretLines.map((fl) => {
+    const seg = extendFrets
+      ? extendSegmentToOutline(fl.x1, fl.y1, fl.x2, fl.y2, result.outline)
+      : { x1: fl.x1, y1: fl.y1, x2: fl.x2, y2: fl.y2 };
+    return buildLine(seg.x1, seg.y1, seg.x2, seg.y2, layerFrets, unit);
+  }).join('');
 
   // ── Strings: one LINE per string (nut to bridge) ──────────────────────────
   const stringEntities = result.strings.map((sl) =>

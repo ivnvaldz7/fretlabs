@@ -15,15 +15,19 @@ import {
 import { PresetSelector } from '../panels/PresetSelector';
 import { ScaleLengthPanel } from '../panels/ScaleLengthPanel';
 import { StringsPanel } from '../panels/StringsPanel';
+import { OverhangPanel } from '../panels/OverhangPanel';
 import { CalculationPanel } from '../panels/CalculationPanel';
 import { ExportMenu } from '../export/ExportMenu';
+import { FretTable } from '../display/FretTable';
+import { HelpTip } from '../display/HelpTip';
 import { useLocale } from '../../../hooks/useLocale';
 import type { Locale } from '../../../i18n';
 import type { Unit } from '../../../config/constants';
 
 const UNITS: Unit[] = ['mm', 'in', 'cm'];
 
-type SectionKey = 'preset' | 'scaleLength' | 'strings' | 'calculation' | 'frets' | 'export';
+type SectionKey = 'preset' | 'scaleLength' | 'strings' | 'overhang' | 'calculation' | 'frets' | 'export';
+type MainView = 'design' | 'table';
 
 /** Chevron icon — rotates when open */
 function Chevron({ open }: { open: boolean }) {
@@ -94,9 +98,13 @@ export function AppShell() {
     config,
     result,
     error,
+    errorDetail,
+    notice,
+    clearNotice,
     updateScaleLength,
     updateStrings,
     updateCalculation,
+    updateOverhang,
     setNumFrets,
     setUnit,
     applyPreset,
@@ -104,6 +112,8 @@ export function AppShell() {
 
   const [displayOptions, setDisplayOptions] =
     useState<FretboardDisplayOptions>(DEFAULT_DISPLAY_OPTIONS);
+
+  const [mainView, setMainView] = useState<MainView>('design');
 
   // Which sections are expanded on mobile. Desktop always shows all.
   const [openSections, setOpenSections] = useState<Set<SectionKey>>(
@@ -160,6 +170,7 @@ export function AppShell() {
           <div className="flex items-center justify-between border-b border-border px-4 py-3 md:mb-4 md:border-none md:px-0 md:py-0">
             <span className="text-xs font-semibold uppercase tracking-wider text-text-dim">
               {t('panel.units.label')}
+              <HelpTip text={t('help.units.about')} align="right" />
             </span>
             <div className="flex overflow-hidden rounded border border-border">
               {UNITS.map((u) => (
@@ -204,17 +215,30 @@ export function AppShell() {
             />
           </Section>
 
+          {/* Overhang — collapsible on mobile */}
+          <Section sectionKey="overhang" title={t('panel.overhang.label')} open={isOpen('overhang')} onToggle={toggleSection}>
+            <OverhangPanel
+              overhang={config.overhang}
+              unit={config.unit}
+              onChange={updateOverhang}
+            />
+          </Section>
+
           {/* Calculation — collapsible on mobile */}
           <Section sectionKey="calculation" title={t('panel.calculation.label')} open={isOpen('calculation')} onToggle={toggleSection}>
             <CalculationPanel
               calculation={config.calculation}
+              numStrings={config.strings.count}
               onChange={updateCalculation}
             />
           </Section>
 
           {/* Frets — collapsible on mobile */}
           <Section sectionKey="frets" title={t('panel.frets.label')} open={isOpen('frets')} onToggle={toggleSection}>
-            <label className={labelCls}>{t('panel.frets.count')}</label>
+            <label className={labelCls}>
+              {t('panel.frets.count')}
+              <HelpTip text={t('help.frets.count')} />
+            </label>
             <input
               type="number"
               min="1"
@@ -239,44 +263,94 @@ export function AppShell() {
         <main className="flex flex-1 flex-col overflow-auto">
           {/* Preview toolbar */}
           <div className="flex flex-none items-center justify-between border-b border-border px-4 py-2 md:px-6">
-            <span className="text-sm font-medium text-text-muted">
-              {t('preview.title')}
-            </span>
-            <div className="flex items-center gap-3 md:gap-4">
-              {(
-                [
-                  ['showEdges', 'preview.options.showEdges'],
-                  ['showStrings', 'preview.options.showStrings'],
-                ] as [keyof FretboardDisplayOptions, string][]
-              ).map(([key, labelKey]) => (
-                <label
-                  key={key}
-                  className="flex cursor-pointer items-center gap-1.5 text-xs text-text-muted"
+            <div className="flex items-center gap-3">
+              <div className="flex overflow-hidden rounded border border-border">
+                <button
+                  type="button"
+                  onClick={() => setMainView('design')}
+                  className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                    mainView === 'design'
+                      ? 'bg-primary text-white'
+                      : 'bg-surface-alt text-text-muted hover:text-text'
+                  }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={displayOptions[key]}
-                    onChange={() => toggleDisplayOption(key)}
-                    className="accent-primary"
-                  />
-                  <span className="hidden sm:inline">{t(labelKey)}</span>
-                </label>
-              ))}
+                  {t('nav.design')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMainView('table')}
+                  className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                    mainView === 'table'
+                      ? 'bg-primary text-white'
+                      : 'bg-surface-alt text-text-muted hover:text-text'
+                  }`}
+                >
+                  {t('nav.table')}
+                </button>
+              </div>
+              <span className="hidden text-sm font-medium text-text-muted md:inline">
+                {mainView === 'design' ? t('preview.title') : t('table.title')}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 md:gap-4">
+              {mainView === 'design' &&
+                ((
+                  [
+                    ['showEdges', 'preview.options.showEdges'],
+                    ['showStrings', 'preview.options.showStrings'],
+                    ['extendFrets', 'preview.options.extendFrets'],
+                  ] as [keyof FretboardDisplayOptions, string][]
+                ).map(([key, labelKey]) => (
+                  <label
+                    key={key}
+                    className="flex cursor-pointer items-center gap-1.5 text-xs text-text-muted"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={displayOptions[key]}
+                      onChange={() => toggleDisplayOption(key)}
+                      className="accent-primary"
+                    />
+                    <span className="hidden sm:inline">{t(labelKey)}</span>
+                  </label>
+                )))}
             </div>
           </div>
 
-          {/* SVG preview area */}
+          {/* Main area (Preview or Table) */}
           <div className="flex flex-1 items-center justify-center p-4 md:p-8">
             {error ? (
               <div className="max-w-lg rounded border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
-                {t(error)}
+                <div>{t(error)}</div>
+                {errorDetail && (
+                  <div className="mt-1 font-mono text-xs text-error/90">
+                    {errorDetail}
+                  </div>
+                )}
               </div>
             ) : result ? (
-              <div className="w-full max-w-5xl">
-                <FretboardSVG result={result} options={displayOptions} />
-              </div>
+              mainView === 'design' ? (
+                <div className="w-full max-w-5xl">
+                  <FretboardSVG result={result} options={displayOptions} />
+                </div>
+              ) : (
+                <FretTable result={result} unit={config.unit} />
+              )
             ) : null}
           </div>
+
+          {notice && (
+            <div className="flex flex-none items-center justify-between border-t border-border px-4 py-3 text-sm md:px-6">
+              <span className="text-text-muted">{t(notice)}</span>
+              <button
+                type="button"
+                onClick={clearNotice}
+                className="rounded border border-border px-2 py-1 text-xs text-text-muted hover:text-text"
+              >
+                OK
+              </button>
+            </div>
+          )}
         </main>
       </div>
     </div>

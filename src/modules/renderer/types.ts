@@ -4,9 +4,12 @@ export interface FretboardDisplayOptions {
   showStrings: boolean;
   /** Show fretboard fill and outline edges */
   showEdges: boolean;
+  /** Extend fret lines to the fretboard outline edges */
+  extendFrets: boolean;
 }
 
 export const DEFAULT_DISPLAY_OPTIONS: FretboardDisplayOptions = {
   showStrings: true,
   showEdges: true,
+  extendFrets: false,
 };

@@ -28,11 +28,12 @@ export function exportCsv(result: FretboardResult, options: ExportOptions): stri
   const { unit } = options;
   const precision = options.precision ?? UNIT_PRECISION[unit];
 
-  const { fretPositions, fretLines, strings: stringLines } = result;
+  const { fretPositions, strings: stringLines } = result;
 
   const numStrings = stringLines.length;
-  // fretLines includes fret 0 (nut), so numFrets = fretLines.length - 1
-  const fretsPerString = fretLines.length;
+  // Derive frets-per-string from the packed fretPositions array.
+  // This remains valid even when fretLines are grouped by scale degrees (Scala tuning offsets).
+  const fretsPerString = Math.floor(fretPositions.length / Math.max(1, numStrings));
 
   // Convert a mm value to the output unit, formatted to the chosen precision
   const fmt = (mm: number): string => fromMm(mm, unit).toFixed(precision);

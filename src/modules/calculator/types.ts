@@ -57,6 +57,34 @@ export interface FretboardOutline {
   bridgeLast: { x: number; y: number };
 }
 
+// ── Overhang ───────────────────────────────────────────────────────────────
+
+export type OverhangMode = 'equal' | 'nutBridge' | 'firstLast' | 'all';
+
+/**
+ * Overhang is the distance from the centerline of the outer string to the
+ * fretboard edge, measured at the nut and bridge.
+ *
+ * - "first" = string 0 side (treble)
+ * - "last"  = string N-1 side (bass)
+ */
+export interface OverhangConfig {
+  mode: OverhangMode;
+  /** One value applied to all four corners */
+  equalMm?: number;
+  /** Symmetric values applied to both sides at nut and bridge */
+  nutMm?: number;
+  bridgeMm?: number;
+  /** Asymmetric values applied to first/last side for both nut and bridge */
+  firstMm?: number;
+  lastMm?: number;
+  /** Fully explicit corner values */
+  nutFirstMm?: number;
+  nutLastMm?: number;
+  bridgeFirstMm?: number;
+  bridgeLastMm?: number;
+}
+
 /** Metadata about the calculation */
 export interface CalculationMeta {
   /** Method used */
@@ -127,6 +155,7 @@ export interface FretboardConfig {
   scaleLength: ScaleLengthConfig;
   strings: StringConfig;
   calculation: CalculationConfig;
+  overhang?: OverhangConfig;
   numFrets: number;
   unit: Unit;
 }

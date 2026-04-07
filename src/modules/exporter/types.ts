@@ -6,7 +6,7 @@ import type { Unit } from '../../config/constants';
  */
 export interface ExportOptions {
   /** Target file format */
-  format: 'svg' | 'dxf' | 'csv';
+  format: 'svg' | 'dxf' | 'csv' | 'pdf';
   /** Unit for all coordinate / distance values in the exported file */
   unit: Unit;
   /**
@@ -14,6 +14,11 @@ export interface ExportOptions {
    * Defaults to true. When false, everything goes on layer 0.
    */
   layers?: boolean;
+  /**
+   * SVG/DXF/PDF: extend fret lines until they reach the fretboard outline edges.
+   * Defaults to false.
+   */
+  extendFrets?: boolean;
   /**
    * CSV only: number of decimal places for distance values.
    * Defaults to the precision appropriate for the chosen unit

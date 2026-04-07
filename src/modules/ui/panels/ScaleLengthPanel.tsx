@@ -9,6 +9,7 @@ import { fromMm, toMm } from '../../../utils/unit-converter';
 import { useLocale } from '../../../hooks/useLocale';
 import type { ScaleLengthConfig, ScaleLengthMode } from '../../calculator/types';
 import type { Unit } from '../../../config/constants';
+import { HelpTip } from '../display/HelpTip';
 
 const MODES: ScaleLengthMode[] = ['single', 'multi', 'individual'];
 
@@ -91,6 +92,7 @@ export function ScaleLengthPanel({
         <div>
           <label className={labelCls}>
             {t('panel.scaleLength.fundamental')} ({unit})
+            <HelpTip text={t('help.scaleLength.fundamental')} />
           </label>
           <input
             type="number"
@@ -111,6 +113,7 @@ export function ScaleLengthPanel({
           <div>
             <label className={labelCls}>
               {t('panel.scaleLength.first')} ({unit})
+              <HelpTip text={t('help.scaleLength.first')} />
             </label>
             <input
               type="number"
@@ -126,6 +129,7 @@ export function ScaleLengthPanel({
           <div>
             <label className={labelCls}>
               {t('panel.scaleLength.last')} ({unit})
+              <HelpTip text={t('help.scaleLength.last')} />
             </label>
             <input
               type="number"
@@ -139,7 +143,10 @@ export function ScaleLengthPanel({
             />
           </div>
           <div>
-            <label className={labelCls}>{t('panel.scaleLength.perpendicular')} (0–1)</label>
+            <label className={labelCls}>
+              {t('panel.scaleLength.perpendicular')} (0–1)
+              <HelpTip text={t('help.scaleLength.perpendicular')} />
+            </label>
             <input
               type="number"
               step="0.01"
@@ -190,6 +197,7 @@ export function ScaleLengthPanel({
           <div className="pt-1">
             <label className={labelCls}>
               {t('panel.scaleLength.perpendicular')} (0–1)
+              <HelpTip text={t('help.scaleLength.perpendicular')} />
             </label>
             <input
               type="number"
