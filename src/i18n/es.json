@@ -73,12 +73,25 @@
       "tuning": "Afinación (pasos de escala por cuerda)"
     },
     "units": {
-      "label": "Unidades"
+      "label": "Unidades",
+      "precision": "Precision de display",
+      "precisionOptions": {
+        "exact": "Exacto",
+        "128th": "1/128\"",
+        "64th": "1/64\"",
+        "32nd": "1/32\"",
+        "16th": "1/16\"",
+        "8th": "1/8\"",
+        "4th": "1/4\"",
+        "2th": "1/2\"",
+        "whole": "1\""
+      }
     }
   },
   "help": {
     "units": {
-      "about": "Solo cambia como se muestran los valores. Internamente todo se calcula en mm."
+      "about": "Solo cambia como se muestran los valores. Internamente todo se calcula en mm.",
+      "precision": "Redondea los valores a fracciones comunes de pulgada. No afecta los calculos."
     },
     "frets": {
       "count": "Cantidad de trastes a calcular, dibujar y exportar."
@@ -113,7 +126,8 @@
     "options": {
       "showEdges": "Mostrar bordes del diapasón",
       "showStrings": "Mostrar cuerdas",
-      "extendFrets": "Extender trastes al borde"
+      "extendFrets": "Extender trastes al borde",
+      "showAnnotations": "Mostrar anotaciones"
     }
   },
   "table": {

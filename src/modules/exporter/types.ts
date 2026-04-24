@@ -20,6 +20,11 @@ export interface ExportOptions {
    */
   extendFrets?: boolean;
   /**
+   * SVG/PDF: include dimension annotations on the exported file.
+   * Defaults to true.
+   */
+  annotations?: boolean;
+  /**
    * CSV only: number of decimal places for distance values.
    * Defaults to the precision appropriate for the chosen unit
    * (mm → 3, cm → 4, in → 5).

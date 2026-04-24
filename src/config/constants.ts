@@ -44,6 +44,38 @@ export const UNIT_LABELS: Record<Unit, string> = {
   in: 'in',
 };
 
+/** Rounding precision for display (inches only) */
+export type DisplayPrecision = 'exact' | '128th' | '64th' | '32nd' | '16th' | '8th' | '4th' | '2th' | 'whole';
+
+/** Denominator for each rounding option (fraction of an inch) */
+export const ROUNDING_DENOMINATOR: Record<DisplayPrecision, number> = {
+  exact: 0, // No rounding, show full precision
+  '128th': 128,
+  '64th': 64,
+  '32nd': 32,
+  '16th': 16,
+  '8th': 8,
+  '4th': 4,
+  '2th': 2,
+  whole: 1,
+};
+
+/** Rounding options displayed to user */
+export const DISPLAY_PRECISIONS: DisplayPrecision[] = [
+  'exact',
+  '128th',
+  '64th',
+  '32nd',
+  '16th',
+  '8th',
+  '4th',
+  '2th',
+  'whole',
+];
+
+/** Default display precision */
+export const DEFAULT_DISPLAY_PRECISION: DisplayPrecision = 'exact';
+
 /** Number of decimal places to show per unit */
 export const UNIT_PRECISION: Record<Unit, number> = {
   mm: 3,

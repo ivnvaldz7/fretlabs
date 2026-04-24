@@ -22,7 +22,11 @@ import { FretTable } from '../display/FretTable';
 import { HelpTip } from '../display/HelpTip';
 import { useLocale } from '../../../hooks/useLocale';
 import type { Locale } from '../../../i18n';
-import type { Unit } from '../../../config/constants';
+import type { Unit, DisplayPrecision } from '../../../config/constants';
+import {
+  DISPLAY_PRECISIONS,
+  DEFAULT_DISPLAY_PRECISION,
+} from '../../../config/constants';
 
 const UNITS: Unit[] = ['mm', 'in', 'cm'];
 
@@ -113,6 +117,9 @@ export function AppShell() {
   const [displayOptions, setDisplayOptions] =
     useState<FretboardDisplayOptions>(DEFAULT_DISPLAY_OPTIONS);
 
+  const [displayPrecision, setDisplayPrecision] =
+    useState<DisplayPrecision>(DEFAULT_DISPLAY_PRECISION);
+
   const [mainView, setMainView] = useState<MainView>('design');
 
   // Which sections are expanded on mobile. Desktop always shows all.
@@ -167,7 +174,7 @@ export function AppShell() {
         <aside className="flex-none overflow-y-auto border-b border-border md:w-72 md:border-b-0 md:border-r md:p-4">
 
           {/* Unit selector — always visible, not collapsible */}
-          <div className="flex items-center justify-between border-b border-border px-4 py-3 md:mb-4 md:border-none md:px-0 md:py-0">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3 md:mb-2 md:border-none md:px-0 md:py-0">
             <span className="text-xs font-semibold uppercase tracking-wider text-text-dim">
               {t('panel.units.label')}
               <HelpTip text={t('help.units.about')} align="right" />
@@ -188,6 +195,26 @@ export function AppShell() {
               ))}
             </div>
           </div>
+
+          {/* Display precision — only shown when inches selected */}
+          {config.unit === 'in' && (
+            <div className="flex items-center justify-between border-b border-border px-4 py-2 md:border-none md:px-0 md:py-0">
+              <span className="text-xs font-semibold uppercase tracking-wider text-text-dim">
+                {t('panel.units.precision')}
+              </span>
+              <select
+                value={displayPrecision}
+                onChange={(e) => setDisplayPrecision(e.target.value as DisplayPrecision)}
+                className="rounded border border-border bg-surface-elevated px-2 py-0.5 text-xs text-text"
+              >
+                {DISPLAY_PRECISIONS.map((p) => (
+                  <option key={p} value={p}>
+                    {t(`panel.units.precisionOptions.${p}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Preset — collapsible on mobile */}
           <Section sectionKey="preset" title={t('panel.preset.label')} open={isOpen('preset')} onToggle={toggleSection}>
@@ -299,6 +326,7 @@ export function AppShell() {
                     ['showEdges', 'preview.options.showEdges'],
                     ['showStrings', 'preview.options.showStrings'],
                     ['extendFrets', 'preview.options.extendFrets'],
+                    ['showAnnotations', 'preview.options.showAnnotations'],
                   ] as [keyof FretboardDisplayOptions, string][]
                 ).map(([key, labelKey]) => (
                   <label
@@ -331,10 +359,14 @@ export function AppShell() {
             ) : result ? (
               mainView === 'design' ? (
                 <div className="w-full max-w-5xl">
-                  <FretboardSVG result={result} options={displayOptions} />
+                  <FretboardSVG result={result} options={displayOptions} unit={config.unit} />
                 </div>
               ) : (
-                <FretTable result={result} unit={config.unit} />
+                <FretTable
+                  result={result}
+                  unit={config.unit}
+                  precision={displayPrecision}
+                />
               )
             ) : null}
           </div>

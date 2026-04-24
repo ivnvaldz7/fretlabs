@@ -14,6 +14,7 @@
  *   3. Fret lines (nut is thicker)
  *   4. String lines
  *   5. Fretboard outline stroke
+ *   6. Annotations (dimensions, labels)
  */
 
 import type { FretboardResult } from '../calculator/types';
@@ -29,6 +30,8 @@ const COLOR_BOARD_EDGE = '#1A1A1A';
 const COLOR_FRET = '#2A2A2A';
 const COLOR_NUT = '#1A1A1A';
 const COLOR_STRING = '#888888';
+const COLOR_ANNOTATION = '#FFFFFF';
+const COLOR_ANNOTATION_BG = 'rgba(0,0,0,0.75)';
 
 const STROKE_FRET_MM = 0.6;
 const STROKE_NUT_MM = 2.5;
@@ -36,10 +39,23 @@ const STROKE_STRING_MM = 0.35;
 const STROKE_BOARD_EDGE_MM = 0.8;
 
 const SVG_PADDING_MM = 10;
+const FONT_SIZE_MM = 3;
+const ANNOTATION_PADDING = 2;
 
 /** Format a number to 4 decimal places for SVG coordinates */
 function f(n: number): string {
   return n.toFixed(4);
+}
+
+/** Format a mm value for display */
+function formatMm(valueMm: number, unit: string): string {
+  const converted = valueMm / (unit === 'cm' ? 10 : unit === 'in' ? 25.4 : 1);
+  return converted.toFixed(2);
+}
+
+/** Escape text for SVG */
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /**
@@ -53,6 +69,7 @@ export function exportSvg(result: FretboardResult, options: ExportOptions): stri
   const { unit } = options;
   const { fretLines, strings: stringLines, outline } = result;
   const extendFrets = options.extendFrets === true;
+  const showAnnotations = options.annotations !== false;
 
   // ── Compute bounding box and viewBox (all in mm) ──────────────────────────
 
@@ -82,7 +99,7 @@ export function exportSvg(result: FretboardResult, options: ExportOptions): stri
 
   const viewBox = `${f(minX)} ${f(minY)} ${f(widthMm)} ${f(heightMm)}`;
 
-  // ── Outline path (closed quadrilateral) ──────────────────────────────────
+  // ── Outline path (closed quadrilateral) ─────────────────��────────────────
 
   const boardPath = [
     `M ${f(outline.nutFirst.x)} ${f(outline.nutFirst.y)}`,
@@ -119,7 +136,57 @@ export function exportSvg(result: FretboardResult, options: ExportOptions): stri
   // Outline stroke
   const boardStroke = `  <path d="${boardPath}" fill="none" stroke="${COLOR_BOARD_EDGE}" stroke-width="${STROKE_BOARD_EDGE_MM}" stroke-linejoin="round"/>`;
 
-  // ── Assemble metadata comment ─────────────────────────────────────────────
+  // ── Annotations ────────────────────────────────────────────────────
+  const annotations: string[] = [];
+
+  if (showAnnotations) {
+    // Scale length
+    const scaleLengths = stringLines.map((s) => s.scaleLengthMm);
+    const scaleText = scaleLengths.length === 1
+      ? `${formatMm(scaleLengths[0], unit)} ${unit}`
+      : `${formatMm(Math.min(...scaleLengths), unit)} - ${formatMm(Math.max(...scaleLengths), unit)} ${unit}`;
+
+    const midX = (minX + maxX) / 2;
+    const labelText = `Scale: ${scaleText}`;
+    const textWidth = labelText.length * FONT_SIZE_MM * 0.7;
+    const boxW = textWidth + ANNOTATION_PADDING * 2;
+    const boxH = FONT_SIZE_MM + ANNOTATION_PADDING * 2;
+    const labelY = maxY - 15;
+
+    annotations.push(
+      `  <rect x="${f(midX - boxW/2)}" y="${f(labelY - boxH/2)}" width="${f(boxW)}" height="${f(boxH)}" fill="${COLOR_ANNOTATION_BG}" rx="1"/>`,
+      `  <text x="${f(midX)}" y="${f(labelY + FONT_SIZE_MM/3)}" fill="${COLOR_ANNOTATION}" font-size="${FONT_SIZE_MM}" font-family="monospace" text-anchor="middle">${escapeXml(labelText)}</text>`,
+    );
+
+    // Nut width
+    const nutWidth = outline.nutLast.x - outline.nutFirst.x;
+    const nutX = outline.nutFirst.x - 15;
+    annotations.push(
+      `  <line x1="${f(nutX)}" y1="${f(outline.nutFirst.y)}" x2="${f(nutX)}" y2="${f(outline.nutLast.y)}" stroke="${COLOR_ANNOTATION}" stroke-width="0.3"/>`,
+      `  <text x="${f(nutX)}" y="${f((outline.nutFirst.y + outline.nutLast.y)/2)}" fill="${COLOR_ANNOTATION}" font-size="${FONT_SIZE_MM}" font-family="monospace" text-anchor="end" transform="rotate(90 ${f(nutX)} ${f((outline.nutFirst.y + outline.nutLast.y)/2)})">${formatMm(nutWidth, unit)} ${unit}</text>`,
+    );
+
+    // Bridge width
+    const bridgeWidth = outline.bridgeLast.x - outline.bridgeFirst.x;
+    const bridgeX = outline.bridgeFirst.x + 15;
+    annotations.push(
+      `  <line x1="${f(bridgeX)}" y1="${f(outline.bridgeFirst.y)}" x2="${f(bridgeX)}" y2="${f(outline.bridgeLast.y)}" stroke="${COLOR_ANNOTATION}" stroke-width="0.3"/>`,
+      `  <text x="${f(bridgeX)}" y="${f((outline.bridgeFirst.y + outline.bridgeLast.y)/2)}" fill="${COLOR_ANNOTATION}" font-size="${FONT_SIZE_MM}" font-family="monospace" text-anchor="start" transform="rotate(90 ${f(bridgeX)} ${f((outline.bridgeFirst.y + outline.bridgeLast.y)/2)})">${formatMm(bridgeWidth, unit)} ${unit}</text>`,
+    );
+
+    // Fret markers (12, 24)
+    fretLines
+      .filter((fl) => fl.fret === 12 || fl.fret === 24)
+      .forEach((fl) => {
+        const fretMidX = (fl.x1 + fl.x2) / 2;
+        annotations.push(
+          `  <rect x="${f(fretMidX - 4)}" y="${f(outline.nutFirst.y - 12)}" width="8" height="5" fill="${COLOR_ANNOTATION_BG}" rx="1"/>`,
+          `  <text x="${f(fretMidX)}" y="${f(outline.nutFirst.y - 9)}" fill="${COLOR_ANNOTATION}" font-size="${FONT_SIZE_MM}" font-family="monospace" text-anchor="middle">${fl.fret}</text>`,
+        );
+      });
+  }
+
+  // ── Assemble metadata comment ───────────────────────────────────────
 
   const method = result.meta.method === 'equal'
     ? `Equal Temperament (${result.meta.tonesPerOctave ?? 12} tones/octave)`
@@ -136,7 +203,7 @@ export function exportSvg(result: FretboardResult, options: ExportOptions): stri
     `Coordinates in mm | Physical size in ${unit}`,
   ].map((l) => `  ${l}`).join('\n');
 
-  // ── Final SVG ─────────────────────────────────────────────────────────────
+  // ── Final SVG ─────────────────────────────────────────────────────────
 
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
@@ -148,12 +215,13 @@ export function exportSvg(result: FretboardResult, options: ExportOptions): stri
     `  width="${widthDisplay}${unit}"`,
     `  height="${heightDisplay}${unit}"`,
     `  viewBox="${viewBox}"`,
-    `>`,
+`>`,
     background,
     boardFill,
     fretSvgLines,
     stringSvgLines,
     boardStroke,
+    ...annotations,
     `</svg>`,
-  ].join('\n');
+].join('\n');
 }

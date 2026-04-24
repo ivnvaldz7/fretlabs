@@ -4,7 +4,13 @@
  * Conversion happens at the boundaries: input → mm → calculation → mm → display.
  */
 
-import { UNIT_TO_MM, UNIT_PRECISION, type Unit } from '../config/constants';
+import {
+  UNIT_TO_MM,
+  UNIT_PRECISION,
+  ROUNDING_DENOMINATOR,
+  type Unit,
+  type DisplayPrecision,
+} from '../config/constants';
 
 /**
  * Convert a value from a given unit to mm.
@@ -27,12 +33,58 @@ export function fromMm(valueMm: number, toUnit: Unit): number {
 }
 
 /**
- * Format a mm value for display in a given unit, with appropriate precision.
+ * Round a value to a specific fraction of an inch.
+ * Only applies to inch display - mm/cm always show exact values.
+ * @param value - The value in inches
+ * @param precision - The rounding precision option
+ * @returns Rounded value in inches
+ */
+export function roundToInchFraction(value: number, precision: DisplayPrecision): number {
+  if (precision === 'exact') return value;
+
+  const denom = ROUNDING_DENOMINATOR[precision];
+  if (denom === 0) return value;
+
+  return Math.round(value * denom) / denom;
+}
+
+/**
+ * Format a mm value for display with optional rounding.
  * @param valueMm - The value in mm
  * @param unit - The display unit
+ * @param precision - Optional rounding (only applies to inches)
  * @returns Formatted string
  */
-export function formatForDisplay(valueMm: number, unit: Unit): string {
-  const converted = fromMm(valueMm, unit);
+export function formatForDisplay(
+  valueMm: number,
+  unit: Unit,
+  precision: DisplayPrecision = 'exact',
+): string {
+  let converted = fromMm(valueMm, unit);
+
+  if (unit === 'in' && precision !== 'exact') {
+    converted = roundToInchFraction(converted, precision);
+    const denom = ROUNDING_DENOMINATOR[precision];
+    if (denom > 0) {
+      const wholePart = Math.floor(converted);
+      const fracPart = converted - wholePart;
+      if (fracPart < 0.0001) {
+        return wholePart.toString();
+      }
+      const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+      const num = fracPart * denom;
+      const d = gcd(Math.round(num), denom);
+      const numerator = Math.round(num) / d;
+      const denominator = denom / d;
+      if (denominator === 1) {
+        return (wholePart + numerator).toString();
+      }
+      if (wholePart === 0) {
+        return `${numerator}/${denominator}`;
+      }
+      return `${wholePart} ${numerator % denominator}/${denominator}`;
+    }
+  }
+
   return converted.toFixed(UNIT_PRECISION[unit]);
 }

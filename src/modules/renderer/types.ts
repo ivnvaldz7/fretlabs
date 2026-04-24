@@ -6,10 +6,13 @@ export interface FretboardDisplayOptions {
   showEdges: boolean;
   /** Extend fret lines to the fretboard outline edges */
   extendFrets: boolean;
+  /** Show dimension annotations on the fretboard */
+  showAnnotations: boolean;
 }
 
 export const DEFAULT_DISPLAY_OPTIONS: FretboardDisplayOptions = {
   showStrings: true,
   showEdges: true,
   extendFrets: false,
+  showAnnotations: true,
 };

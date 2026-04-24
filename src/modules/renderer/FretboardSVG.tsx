@@ -13,12 +13,14 @@
  *   2. Fret lines (metal, nut is thicker + distinct color)
  *   3. String lines (optional)
  *   4. Fretboard outline stroke (dark edge)
+ *   5. Annotations (dimension lines with labels outside)
  */
 
 import type { FretboardResult } from '../calculator/types';
 import type { FretboardDisplayOptions } from './types';
 import { computeSvgViewport } from './geometry';
 import { extendSegmentToOutline } from '../../utils/extend-line-to-outline';
+import type { Unit } from '../../config/constants';
 
 // ── Visual constants ────────────────────────────────────────────────────────
 
@@ -32,6 +34,10 @@ const COLOR_FRET = '#C0B882';
 const COLOR_NUT = '#E8D8A0';
 /** String (steel) */
 const COLOR_STRING = '#C8C8C8';
+/** Annotation text color */
+const COLOR_ANNOTATION = '#FFD700';
+/** Annotation line color */
+const COLOR_DIMENSION = '#FFD700';
 
 /** Fret stroke width in mm (a real fret slot is ~0.5mm wide) */
 const STROKE_FRET_MM = 0.6;
@@ -41,6 +47,37 @@ const STROKE_NUT_MM = 2.5;
 const STROKE_STRING_MM = 0.35;
 /** Board outline stroke width in mm */
 const STROKE_BOARD_EDGE_MM = 0.8;
+/** Annotation font size in mm (larger for visibility) */
+const FONT_SIZE_MM = 7;
+/** Dimension line offset from fretboard */
+const DIM_OFFSET = 20;
+/** Annotation box size */
+const ANNOT_BOX_W = 22;
+const ANNOT_BOX_H = 10;
+
+/**
+ * Format a mm value for display with unit */
+function formatMm(valueMm: number, unit: Unit): string {
+  const converted = valueMm / (unit === 'cm' ? 10 : unit === 'in' ? 25.4 : 1);
+  if (unit === 'in') {
+    return converted.toFixed(3);
+  }
+  return converted.toFixed(1);
+}
+
+/**
+ * Get display text for scale length */
+function getScaleLengthText(scaleLengths: number[], unit: Unit): string {
+  if (scaleLengths.length === 1) {
+    return `Scale: ${formatMm(scaleLengths[0], unit)} ${unit}`;
+  }
+  const min = Math.min(...scaleLengths);
+  const max = Math.max(...scaleLengths);
+  if (Math.abs(max - min) < 0.1) {
+    return `Scale: ${formatMm(min, unit)} ${unit}`;
+  }
+  return `Scale: ${formatMm(min, unit)} - ${formatMm(max, unit)} ${unit}`;
+}
 
 // ── Component ───────────────────────────────────────────────────────────────
 
@@ -48,6 +85,84 @@ interface FretboardSVGProps {
   result: FretboardResult;
   options: FretboardDisplayOptions;
   className?: string;
+  unit?: Unit;
+}
+
+/**
+ * Render dimension line with arrows outside the fretboard */
+function DimensionLine({
+  start,
+  end,
+  label,
+  orientation,
+}: {
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+  label: string;
+  orientation: 'horizontal' | 'vertical';
+}) {
+  const isVertical = orientation === 'vertical';
+  const perp = isVertical ? DIM_OFFSET : -DIM_OFFSET;
+  
+  const startX = start.x + (isVertical ? perp : 0);
+  const startY = start.y + (isVertical ? 0 : -perp);
+  const endX = end.x + (isVertical ? perp : 0);
+  const endY = end.y + (isVertical ? 0 : -perp);
+  
+  const textX = (startX + endX) / 2;
+  const textY = (startY + endY) / 2;
+  
+  const arrowSize = 3;
+  const arrowDir = isVertical ? 1 : -1;
+  
+  return (
+    <g>
+      <line
+        x1={startX}
+        y1={startY}
+        x2={endX}
+        y2={endY}
+        stroke={COLOR_DIMENSION}
+        strokeWidth={0.6}
+      />
+      {/* Start arrow */}
+      <line
+        x1={startX}
+        y1={startY}
+        x2={startX + (isVertical ? arrowSize * arrowDir : arrowSize)}
+        y2={startY + (isVertical ? arrowSize : arrowSize * arrowDir)}
+        stroke={COLOR_DIMENSION}
+        strokeWidth={0.6}
+      />
+      {/* End arrow */}
+      <line
+        x1={endX}
+        y1={endY}
+        x2={endX - (isVertical ? arrowSize * arrowDir : arrowSize)}
+        y2={endY - (isVertical ? arrowSize : arrowSize * arrowDir)}
+        stroke={COLOR_DIMENSION}
+        strokeWidth={0.6}
+      />
+      <rect
+        x={isVertical ? textX + 3 : textX - ANNOT_BOX_W / 2}
+        y={textY - ANNOT_BOX_H / 2}
+        width={isVertical ? ANNOT_BOX_W : ANNOT_BOX_W}
+        height={ANNOT_BOX_H}
+        fill={COLOR_DIMENSION}
+        rx={2}
+      />
+      <text
+        x={isVertical ? textX + 3 + ANNOT_BOX_W / 2 : textX}
+        y={textY + FONT_SIZE_MM / 3}
+        fill="#000"
+        fontSize={FONT_SIZE_MM}
+        fontFamily="monospace"
+        textAnchor={isVertical ? 'start' : 'middle'}
+      >
+        {label}
+      </text>
+    </g>
+  );
 }
 
 /**
@@ -56,15 +171,21 @@ interface FretboardSVGProps {
  * @param result - Complete fretboard calculation result
  * @param options - Display toggles (showStrings, showEdges)
  * @param className - Optional CSS class for the <svg> element
+ * @param unit - Display unit for annotations
  */
-export function FretboardSVG({ result, options, className }: FretboardSVGProps) {
-  const { showStrings, showEdges, extendFrets } = options;
+export function FretboardSVG({
+  result,
+  options,
+  className,
+  unit = 'mm',
+}: FretboardSVGProps) {
+  const { showStrings, showEdges, extendFrets, showAnnotations } = options;
   const vp = computeSvgViewport(result);
 
-  const { fretLines, strings: stringLines, outline } = result;
+  const { fretLines, strings: stringLines, outline, meta } = result;
 
-  // Fretboard outline as a closed quadrilateral path:
-  // nut-treble → nut-bass → bridge-bass → bridge-treble → close
+  const scaleLengths = stringLines.map((s) => s.scaleLengthMm);
+
   const boardPath = [
     `M ${outline.nutFirst.x} ${outline.nutFirst.y}`,
     `L ${outline.nutLast.x} ${outline.nutLast.y}`,
@@ -72,6 +193,9 @@ export function FretboardSVG({ result, options, className }: FretboardSVGProps) 
     `L ${outline.bridgeFirst.x} ${outline.bridgeFirst.y}`,
     'Z',
   ].join(' ');
+
+  const nutWidth = Math.abs(outline.nutLast.x - outline.nutFirst.x);
+  const bridgeWidth = Math.abs(outline.bridgeLast.x - outline.bridgeFirst.x);
 
   return (
     <svg
@@ -84,9 +208,7 @@ export function FretboardSVG({ result, options, className }: FretboardSVGProps) 
       {/* Layer 1: Fretboard fill */}
       {showEdges && <path d={boardPath} fill={COLOR_BOARD_FILL} />}
 
-      {/* Layer 2: Fret lines
-          Fret 0 is the nut — rendered thicker and in a distinct color.
-          All other frets are standard nickel-silver lines. */}
+      {/* Layer 2: Fret lines */}
       {fretLines.map((fl, idx) => {
         const isNut = fl.fret === 0;
         const seg = extendFrets
@@ -121,7 +243,7 @@ export function FretboardSVG({ result, options, className }: FretboardSVGProps) 
           />
         ))}
 
-      {/* Layer 4: Fretboard outline stroke (drawn last to sit on top of fill) */}
+      {/* Layer 4: Fretboard outline stroke */}
       {showEdges && (
         <path
           d={boardPath}
@@ -130,6 +252,38 @@ export function FretboardSVG({ result, options, className }: FretboardSVGProps) 
           strokeWidth={STROKE_BOARD_EDGE_MM}
           strokeLinejoin="round"
         />
+      )}
+
+      {/* Layer 5: Annotations - dimension lines outside the fretboard */}
+      {showAnnotations && (
+        <g>
+          {/* Scale length - horizontal line BELOW fretboard (between nut and bridge, below) */}
+          <DimensionLine
+            start={{ x: outline.nutFirst.x, y: outline.nutFirst.y + DIM_OFFSET + 15 }}
+            end={{ x: outline.nutLast.x, y: outline.nutLast.y + DIM_OFFSET + 15 }}
+            label={formatMm(scaleLengths[0] || 0, unit)}
+            orientation="horizontal"
+          />
+          
+          {/* Nut width - vertical line on the LEFT side */}
+          <DimensionLine
+            start={{ x: outline.nutFirst.x - DIM_OFFSET, y: outline.nutFirst.y }}
+            end={{ x: outline.nutFirst.x - DIM_OFFSET, y: outline.nutLast.y }}
+            label={formatMm(nutWidth, unit)}
+            orientation="vertical"
+          />
+          
+          {/* Bridge width - vertical line on the RIGHT side */}
+          <DimensionLine
+            start={{ x: outline.bridgeFirst.x + DIM_OFFSET, y: outline.bridgeFirst.y }}
+            end={{ x: outline.bridgeFirst.x + DIM_OFFSET, y: outline.bridgeLast.y }}
+            label={formatMm(bridgeWidth, unit)}
+            orientation="vertical"
+          />
+          
+          {/* Key fret markers (12, 24) - above the fretboard at center Y */}
+          {/* (Removed for cleaner view) */}
+        </g>
       )}
     </svg>
   );

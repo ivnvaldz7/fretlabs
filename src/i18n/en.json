@@ -73,12 +73,25 @@
       "tuning": "Tuning (scale steps per string)"
     },
     "units": {
-      "label": "Units"
+      "label": "Units",
+      "precision": "Display precision",
+      "precisionOptions": {
+        "exact": "Exact",
+        "128th": "1/128\"",
+        "64th": "1/64\"",
+        "32nd": "1/32\"",
+        "16th": "1/16\"",
+        "8th": "1/8\"",
+        "4th": "1/4\"",
+        "2th": "1/2\"",
+        "whole": "1\""
+      }
     }
   },
   "help": {
     "units": {
-      "about": "Changes only how values are shown. All calculations run internally in mm."
+      "about": "Changes only how values are shown. All calculations run internally in mm.",
+      "precision": "Rounds display values to common fractions of an inch. Does not affect calculations."
     },
     "frets": {
       "count": "Number of frets to calculate, draw, and export."
@@ -113,7 +126,8 @@
     "options": {
       "showEdges": "Show fretboard edges",
       "showStrings": "Show strings",
-      "extendFrets": "Extend frets to edge"
+      "extendFrets": "Extend frets to edge",
+      "showAnnotations": "Show annotations"
     }
   },
   "table": {

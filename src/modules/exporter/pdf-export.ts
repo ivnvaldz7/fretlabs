@@ -20,7 +20,7 @@ function escapeHtml(s: string): string {
 }
 
 export function exportPdfHtml(result: FretboardResult, options: ExportOptions): string {
-  const svg = exportSvg(result, { ...options, format: 'svg' });
+  const svg = exportSvg(result, { ...options, format: 'svg', annotations: true });
 
   const method =
     result.meta.method === 'equal'

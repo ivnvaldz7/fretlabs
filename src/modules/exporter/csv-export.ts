@@ -8,8 +8,6 @@
  *   • Section 2 — "Distance from previous fret" — same layout
  *
  * All distances are converted from mm to the unit specified in ExportOptions.
- * For single-scale instruments all string columns are identical; they are
- * still included so the file structure is consistent across designs.
  */
 
 import type { FretboardResult } from '../calculator/types';
@@ -28,17 +26,14 @@ export function exportCsv(result: FretboardResult, options: ExportOptions): stri
   const { unit } = options;
   const precision = options.precision ?? UNIT_PRECISION[unit];
 
-  const { fretPositions, strings: stringLines } = result;
+  const { fretPositions, strings: stringLines, outline } = result;
 
   const numStrings = stringLines.length;
-  // Derive frets-per-string from the packed fretPositions array.
-  // This remains valid even when fretLines are grouped by scale degrees (Scala tuning offsets).
   const fretsPerString = Math.floor(fretPositions.length / Math.max(1, numStrings));
 
-  // Convert a mm value to the output unit, formatted to the chosen precision
   const fmt = (mm: number): string => fromMm(mm, unit).toFixed(precision);
 
-  // ── Metadata header ───────────────────────────────────────────────────────
+  // ── Metadata header ─────────────────────────────────────────────────────
 
   const method = result.meta.method === 'equal'
     ? `Equal Temperament (${result.meta.tonesPerOctave ?? 12} tones/octave)`
@@ -46,9 +41,16 @@ export function exportCsv(result: FretboardResult, options: ExportOptions): stri
 
   const numFrets = fretsPerString - 1;
 
+  // Calculate nut and bridge widths
+  const nutWidth = Math.abs(outline.nutLast.x - outline.nutFirst.x);
+  const bridgeWidth = Math.abs(outline.bridgeLast.x - outline.bridgeFirst.x);
+  const scaleLength = stringLines[0]?.scaleLengthMm ?? 0;
+
   const header = [
     `# FretLabs — Fret Position Table`,
     `# Method: ${method}`,
+    `# Scale Length: ${fmt(scaleLength)} ${unit}`,
+    `# Nut Width: ${fmt(nutWidth)} ${unit} | Bridge Width: ${fmt(bridgeWidth)} ${unit}`,
     `# Frets: ${numFrets} | Strings: ${numStrings} | Unit: ${unit}`,
   ];
 
@@ -61,15 +63,12 @@ export function exportCsv(result: FretboardResult, options: ExportOptions): stri
 
   const columnHeader = ['Fret', ...stringHeaders].join(',');
 
-  // ── Build per-fret rows ───────────────────────────────────────────────────
-  // fretPositions layout: string 0 frets 0..N, string 1 frets 0..N, …
-  // Index formula: stringIndex * fretsPerString + fretIndex
+  // ── Build per-fret rows ───────────────────────────────────────────
 
   const fromNutRows: string[] = [];
   const fromPrevRows: string[] = [];
 
   for (let fn = 0; fn < fretsPerString; fn++) {
-    // Fret label: "0 (Nut)" for fret 0, number for the rest
     const fretLabel = fn === 0 ? '0 (Nut)' : String(fn);
 
     const fromNutCells: string[] = [fretLabel];
@@ -77,15 +76,20 @@ export function exportCsv(result: FretboardResult, options: ExportOptions): stri
 
     for (let si = 0; si < numStrings; si++) {
       const fp = fretPositions[si * fretsPerString + fn];
-      fromNutCells.push(fmt(fp.distanceFromNutMm));
-      fromPrevCells.push(fn === 0 ? '—' : fmt(fp.distanceFromPreviousMm));
+      if (fp) {
+        fromNutCells.push(fmt(fp.distanceFromNutMm));
+        fromPrevCells.push(fn === 0 ? '—' : fmt(fp.distanceFromPreviousMm));
+      } else {
+        fromNutCells.push('');
+        fromPrevCells.push('');
+      }
     }
 
     fromNutRows.push(fromNutCells.join(','));
     fromPrevRows.push(fromPrevCells.join(','));
   }
 
-  // ── Assemble output ───────────────────────────────────────────────────────
+  // ── Assemble output ───────────────────────────────────────────────
 
   const lines: string[] = [
     ...header,

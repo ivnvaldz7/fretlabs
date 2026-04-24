@@ -1,24 +1,31 @@
 import { useMemo, useState } from 'react';
 import type { FretboardResult } from '../../calculator/types';
-import type { Unit } from '../../../config/constants';
-import { fromMm } from '../../../utils/unit-converter';
-import { UNIT_PRECISION } from '../../../config/constants';
+import type { Unit, DisplayPrecision } from '../../../config/constants';
+import { fromMm, formatForDisplay } from '../../../utils/unit-converter';
 import { useLocale } from '../../../hooks/useLocale';
 
 interface FretTableProps {
   result: FretboardResult;
   unit: Unit;
+  precision?: DisplayPrecision;
 }
 
 type TableMode = 'fromNut' | 'fromPrevious';
 
-function buildCopyText(result: FretboardResult, unit: Unit): string {
+function buildCopyText(
+  result: FretboardResult,
+  unit: Unit,
+  precision: DisplayPrecision,
+): string {
   const numStrings = result.strings.length;
-  const fretsPerString = Math.floor(result.fretPositions.length / Math.max(1, numStrings));
-  const precision = UNIT_PRECISION[unit];
-  const fmt = (mm: number) => fromMm(mm, unit).toFixed(precision);
+  const fretsPerString = Math.floor(
+    result.fretPositions.length / Math.max(1, numStrings),
+  );
 
-  const header = ['Fret', ...Array.from({ length: numStrings }, (_, i) => `String ${i + 1} (${unit})`)];
+  const header = [
+    'Fret',
+    ...Array.from({ length: numStrings }, (_, i) => `String ${i + 1} (${unit})`),
+  ];
 
   const section = (title: string, mode: TableMode) => {
     const rows: string[] = [];
@@ -30,8 +37,12 @@ function buildCopyText(result: FretboardResult, unit: Unit): string {
       for (let si = 0; si < numStrings; si++) {
         const fp = result.fretPositions[si * fretsPerString + fn];
         if (!fp) continue;
-        if (mode === 'fromNut') cells.push(fmt(fp.distanceFromNutMm));
-        else cells.push(fn === 0 ? '—' : fmt(fp.distanceFromPreviousMm));
+        if (mode === 'fromNut')
+          cells.push(formatForDisplay(fp.distanceFromNutMm, unit, precision));
+        else
+          cells.push(
+            fn === 0 ? '—' : formatForDisplay(fp.distanceFromPreviousMm, unit, precision),
+          );
       }
       rows.push(cells.join('\t'));
     }
@@ -63,34 +74,38 @@ async function copyToClipboard(text: string): Promise<void> {
   }
 }
 
-export function FretTable({ result, unit }: FretTableProps) {
+export function FretTable({
+  result,
+  unit,
+  precision = 'exact',
+}: FretTableProps) {
   const { t } = useLocale();
   const [mode, setMode] = useState<TableMode>('fromNut');
   const [copied, setCopied] = useState(false);
 
   const numStrings = result.strings.length;
-  const fretsPerString = Math.floor(result.fretPositions.length / Math.max(1, numStrings));
-  const precision = UNIT_PRECISION[unit];
+  const fretsPerString = Math.floor(
+    result.fretPositions.length / Math.max(1, numStrings),
+  );
 
   const rows = useMemo(() => {
-    const fmt = (mm: number) => fromMm(mm, unit).toFixed(precision);
     return Array.from({ length: fretsPerString }, (_, fn) => {
       const fretLabel = fn === 0 ? '0 (Nut)' : String(fn);
       const values = Array.from({ length: numStrings }, (_, si) => {
         const fp = result.fretPositions[si * fretsPerString + fn];
         if (!fp) return '';
         return mode === 'fromNut'
-          ? fmt(fp.distanceFromNutMm)
+          ? formatForDisplay(fp.distanceFromNutMm, unit, precision)
           : fn === 0
             ? '—'
-            : fmt(fp.distanceFromPreviousMm);
+            : formatForDisplay(fp.distanceFromPreviousMm, unit, precision);
       });
       return { fn, fretLabel, values };
     });
   }, [fretsPerString, mode, numStrings, precision, result.fretPositions, unit]);
 
   const copy = async () => {
-    await copyToClipboard(buildCopyText(result, unit));
+    await copyToClipboard(buildCopyText(result, unit, precision));
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   };
