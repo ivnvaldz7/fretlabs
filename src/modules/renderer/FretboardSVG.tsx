@@ -21,6 +21,7 @@ import type { FretboardDisplayOptions } from './types';
 import { computeSvgViewport } from './geometry';
 import { extendSegmentToOutline } from '../../utils/extend-line-to-outline';
 import type { Unit } from '../../config/constants';
+import { lineLength } from '../../utils/geometry';
 
 // ── Visual constants ────────────────────────────────────────────────────────
 
@@ -194,8 +195,8 @@ export function FretboardSVG({
     'Z',
   ].join(' ');
 
-  const nutWidth = Math.abs(outline.nutLast.x - outline.nutFirst.x);
-  const bridgeWidth = Math.abs(outline.bridgeLast.x - outline.bridgeFirst.x);
+  const nutWidth = lineLength(outline.nutFirst.x, outline.nutFirst.y, outline.nutLast.x, outline.nutLast.y);
+  const bridgeWidth = lineLength(outline.bridgeFirst.x, outline.bridgeFirst.y, outline.bridgeLast.x, outline.bridgeLast.y);
 
   return (
     <svg

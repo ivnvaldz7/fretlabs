@@ -58,7 +58,10 @@
       "nutFirst": "Cejilla, lado primera",
       "nutLast": "Cejilla, lado ultima",
       "bridgeFirst": "Puente, lado primera",
-      "bridgeLast": "Puente, lado ultima"
+      "bridgeLast": "Puente, lado ultima",
+      "extensions": "Extensiones longitudinales",
+      "nutExtension": "Pasado la cejilla",
+      "lastFretExtension": "Pasado el último traste"
     },
     "frets": {
       "label": "Trastes",
@@ -110,7 +113,9 @@
       "gauges": "Calibres en pulgadas, solo se usan para espaciado proporcional."
     },
     "overhang": {
-      "about": "Distancia desde el centro de la cuerda externa hasta el borde del diapason."
+      "about": "Distancia desde el centro de la cuerda externa hasta el borde del diapason.",
+      "nutExtension": "Cuánto se extiende la madera del diapasón pasada la cejilla hacia el clavijero. 0 = al ras.",
+      "lastFretExtension": "Cuánto se extiende el diapasón pasado el último traste hacia el cuerpo. 10mm es típico."
     },
     "calculation": {
       "tonesPerOctave": "12 es el estandar. Usa otros valores para equal temperament (19, 24, 31...).",

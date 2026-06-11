@@ -256,6 +256,59 @@ export function OverhangPanel({ overhang, unit, onChange }: OverhangPanelProps) 
           </div>
         </div>
       )}
+
+      {/* ── Longitudinal extensions (shared across all lateral modes) ── */}
+      <div className="mt-3 border-t border-border pt-3 space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-text-dim">
+          {t('panel.overhang.extensions')}
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className={labelCls}>
+              {t('panel.overhang.nutExtension')} ({unit})
+              <HelpTip text={t('help.overhang.nutExtension')} />
+            </label>
+            <input
+              type="number"
+              step="any"
+              min={fromMm(LIMITS.MIN_EXTENSION_MM, unit)}
+              max={fromMm(LIMITS.MAX_EXTENSION_MM, unit)}
+              className={inputCls}
+              value={toDisplayValue(oh.nutExtensionMm ?? DEFAULTS.NUT_EXTENSION_MM, unit)}
+              onChange={(e) => {
+                const raw = parseFloat(e.target.value);
+                const mm = toMm(raw, unit);
+                if (!isNaN(mm)) {
+                  const clamped = Math.min(LIMITS.MAX_EXTENSION_MM, Math.max(LIMITS.MIN_EXTENSION_MM, mm));
+                  onChange({ nutExtensionMm: clamped });
+                }
+              }}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>
+              {t('panel.overhang.lastFretExtension')} ({unit})
+              <HelpTip text={t('help.overhang.lastFretExtension')} />
+            </label>
+            <input
+              type="number"
+              step="any"
+              min={fromMm(LIMITS.MIN_EXTENSION_MM, unit)}
+              max={fromMm(LIMITS.MAX_EXTENSION_MM, unit)}
+              className={inputCls}
+              value={toDisplayValue(oh.lastFretExtensionMm ?? DEFAULTS.LAST_FRET_EXTENSION_MM, unit)}
+              onChange={(e) => {
+                const raw = parseFloat(e.target.value);
+                const mm = toMm(raw, unit);
+                if (!isNaN(mm)) {
+                  const clamped = Math.min(LIMITS.MAX_EXTENSION_MM, Math.max(LIMITS.MIN_EXTENSION_MM, mm));
+                  onChange({ lastFretExtensionMm: clamped });
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

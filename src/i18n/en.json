@@ -58,7 +58,10 @@
       "nutFirst": "Nut, first side",
       "nutLast": "Nut, last side",
       "bridgeFirst": "Bridge, first side",
-      "bridgeLast": "Bridge, last side"
+      "bridgeLast": "Bridge, last side",
+      "extensions": "Longitudinal Extensions",
+      "nutExtension": "Past nut",
+      "lastFretExtension": "Past last fret"
     },
     "frets": {
       "label": "Frets",
@@ -110,7 +113,9 @@
       "gauges": "String gauges in inches, used only for proportional spacing."
     },
     "overhang": {
-      "about": "Distance from the outer string center to the fretboard edge."
+      "about": "Distance from the outer string center to the fretboard edge.",
+      "nutExtension": "How far the fretboard wood extends past the nut toward the headstock. 0 = flush with nut.",
+      "lastFretExtension": "How far the fretboard extends past the last fret toward the body. 10mm is typical."
     },
     "calculation": {
       "tonesPerOctave": "12 is standard. Use other values for equal temperament (19, 24, 31...).",

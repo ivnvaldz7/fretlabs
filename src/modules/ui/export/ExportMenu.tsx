@@ -50,12 +50,12 @@ type FormatKey = 'svg' | 'dxf' | 'csv' | 'pdf';
  * @param unit   - Active unit used as the default export unit
  */
 export function ExportMenu({ result, unit }: ExportMenuProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   // Track which button is in a transient "success" state
   const [successKey, setSuccessKey] = useState<FormatKey | null>(null);
   const [extendFrets, setExtendFrets] = useState(false);
 
-  const options: ExportOptions = { format: 'svg', unit, layers: true, extendFrets };
+  const options: ExportOptions = { format: 'svg', unit, layers: true, extendFrets, locale };
 
   const handleExport = (format: FormatKey) => {
     if (!result) return;
@@ -78,13 +78,15 @@ export function ExportMenu({ result, unit }: ExportMenuProps) {
         filename = 'fretlabs-positions.csv';
         mimeType = 'text/csv';
       } else {
-        // Print-to-PDF: open a new window with HTML + SVG and trigger print.
+        // Print-to-PDF: generate a self-contained Blob URL and open it.
         const html = exportPdfHtml(result, { ...options, format: 'pdf' });
-        const w = window.open('', '_blank', 'noopener,noreferrer');
-        if (!w) return;
-        w.document.open();
-        w.document.write(html);
-        w.document.close();
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const w = window.open(url, '_blank');
+        if (w) {
+          // Revoke the Object URL after a delay so the browser can load it.
+          setTimeout(() => URL.revokeObjectURL(url), 10000);
+        }
         setSuccessKey('pdf');
         setTimeout(() => setSuccessKey(null), 1500);
         return;

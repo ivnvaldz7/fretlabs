@@ -30,7 +30,8 @@ import type {
   CalculationMeta,
   OverhangConfig,
 } from './types';
-import { LIMITS } from '../../config/constants';
+import { LIMITS, DEFAULTS } from '../../config/constants';
+import { normalizeVector } from '../../utils/geometry';
 
 // ── Error type ─────────────────────────────────────────────────────────────
 
@@ -175,6 +176,25 @@ function validateConfig(config: FretboardConfig): void {
         );
       }
     }
+
+    const extensions: Array<[string, number | undefined]> = [
+      ['nutExtensionMm', overhang.nutExtensionMm],
+      ['lastFretExtensionMm', overhang.lastFretExtensionMm],
+    ];
+
+    for (const [key, v] of extensions) {
+      if (v === undefined) continue;
+      if (
+        !Number.isFinite(v) ||
+        v < LIMITS.MIN_EXTENSION_MM ||
+        v > LIMITS.MAX_EXTENSION_MM
+      ) {
+        throw new CalculationError(
+          `Extension value out of range for ${key}`,
+          `Expected ${LIMITS.MIN_EXTENSION_MM}..${LIMITS.MAX_EXTENSION_MM}mm, received: ${String(v)}`,
+        );
+      }
+    }
   }
 }
 
@@ -212,11 +232,7 @@ function resolveOverhangCornersMm(
   };
 }
 
-function normalize(dx: number, dy: number): { x: number; y: number } {
-  const len = Math.hypot(dx, dy);
-  if (len === 0) return { x: 0, y: 0 };
-  return { x: dx / len, y: dy / len };
-}
+// Removed local normalize function as it is now imported from utils/geometry as normalizeVector
 
 /**
  * Resolve the scale length in mm for each string.
@@ -556,20 +572,50 @@ export function calculateFretboard(config: FretboardConfig): FretboardResult {
   }
 
   // ── Step 8: Build FretboardOutline ───────────────────────────────────────
+  const nutExt = config.overhang?.nutExtensionMm ?? DEFAULTS.NUT_EXTENSION_MM;
+  const lastFretExt = config.overhang?.lastFretExtensionMm ?? DEFAULTS.LAST_FRET_EXTENSION_MM;
+
+  // Directions of the outer strings (nut -> bridge)
+  const dirFirst = normalizeVector(
+    endpoints[0].bridgeX - endpoints[0].nutX,
+    endpoints[0].bridgeY - endpoints[0].nutY
+  );
+  const dirLast = normalizeVector(
+    endpoints[numStrings - 1].bridgeX - endpoints[numStrings - 1].nutX,
+    endpoints[numStrings - 1].bridgeY - endpoints[numStrings - 1].nutY
+  );
+
+  // Positions of the last fret on the first and last strings
+  const lastFretFirst = fretPositions[0 * fretsPerString + numFrets];
+  const lastFretLast = fretPositions[(numStrings - 1) * fretsPerString + numFrets];
+
+  // Base outline corners projected longitudinally
   const baseOutline: FretboardOutline = {
-    nutFirst: { x: endpoints[0].nutX, y: endpoints[0].nutY },
-    nutLast: { x: endpoints[numStrings - 1].nutX, y: endpoints[numStrings - 1].nutY },
-    bridgeFirst: { x: endpoints[0].bridgeX, y: endpoints[0].bridgeY },
-    bridgeLast: { x: endpoints[numStrings - 1].bridgeX, y: endpoints[numStrings - 1].bridgeY },
+    nutFirst: {
+      x: endpoints[0].nutX - dirFirst.x * nutExt,
+      y: endpoints[0].nutY - dirFirst.y * nutExt,
+    },
+    nutLast: {
+      x: endpoints[numStrings - 1].nutX - dirLast.x * nutExt,
+      y: endpoints[numStrings - 1].nutY - dirLast.y * nutExt,
+    },
+    bridgeFirst: {
+      x: lastFretFirst.x + dirFirst.x * lastFretExt,
+      y: lastFretFirst.y + dirFirst.y * lastFretExt,
+    },
+    bridgeLast: {
+      x: lastFretLast.x + dirLast.x * lastFretExt,
+      y: lastFretLast.y + dirLast.y * lastFretExt,
+    },
   };
 
   const corners = resolveOverhangCornersMm(config.overhang);
 
-  const nutDir = normalize(
+  const nutDir = normalizeVector(
     baseOutline.nutLast.x - baseOutline.nutFirst.x,
     baseOutline.nutLast.y - baseOutline.nutFirst.y,
   );
-  const bridgeDir = normalize(
+  const bridgeDir = normalizeVector(
     baseOutline.bridgeLast.x - baseOutline.bridgeFirst.x,
     baseOutline.bridgeLast.y - baseOutline.bridgeFirst.y,
   );

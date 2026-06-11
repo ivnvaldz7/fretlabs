@@ -21,6 +21,7 @@ import type { FretboardResult } from '../calculator/types';
 import type { ExportOptions } from './types';
 import { fromMm } from '../../utils/unit-converter';
 import { extendSegmentToOutline } from '../../utils/extend-line-to-outline';
+import { lineLength } from '../../utils/geometry';
 
 // ── Visual constants (light / print-friendly palette) ──────────────────────
 
@@ -159,7 +160,7 @@ export function exportSvg(result: FretboardResult, options: ExportOptions): stri
     );
 
     // Nut width
-    const nutWidth = outline.nutLast.x - outline.nutFirst.x;
+    const nutWidth = lineLength(outline.nutFirst.x, outline.nutFirst.y, outline.nutLast.x, outline.nutLast.y);
     const nutX = outline.nutFirst.x - 15;
     annotations.push(
       `  <line x1="${f(nutX)}" y1="${f(outline.nutFirst.y)}" x2="${f(nutX)}" y2="${f(outline.nutLast.y)}" stroke="${COLOR_ANNOTATION}" stroke-width="0.3"/>`,
@@ -167,7 +168,7 @@ export function exportSvg(result: FretboardResult, options: ExportOptions): stri
     );
 
     // Bridge width
-    const bridgeWidth = outline.bridgeLast.x - outline.bridgeFirst.x;
+    const bridgeWidth = lineLength(outline.bridgeFirst.x, outline.bridgeFirst.y, outline.bridgeLast.x, outline.bridgeLast.y);
     const bridgeX = outline.bridgeFirst.x + 15;
     annotations.push(
       `  <line x1="${f(bridgeX)}" y1="${f(outline.bridgeFirst.y)}" x2="${f(bridgeX)}" y2="${f(outline.bridgeLast.y)}" stroke="${COLOR_ANNOTATION}" stroke-width="0.3"/>`,

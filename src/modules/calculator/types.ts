@@ -83,6 +83,9 @@ export interface OverhangConfig {
   nutLastMm?: number;
   bridgeFirstMm?: number;
   bridgeLastMm?: number;
+  /** Longitudinal extensions past the nut and last fret in mm */
+  nutExtensionMm?: number;
+  lastFretExtensionMm?: number;
 }
 
 /** Metadata about the calculation */
