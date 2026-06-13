@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { FretboardResult } from '../../calculator/types';
 import type { Unit, DisplayPrecision } from '../../../config/constants';
-import { fromMm, formatForDisplay } from '../../../utils/unit-converter';
+import { formatForDisplay } from '../../../utils/unit-converter';
 import { useLocale } from '../../../hooks/useLocale';
 
 interface FretTableProps {

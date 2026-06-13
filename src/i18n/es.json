@@ -165,5 +165,10 @@
   "url": {
     "loaded": "Diseño cargado desde link compartido.",
     "invalid": "Link compartido inválido. Se cargaron los valores por defecto."
+  },
+  "donations": {
+    "title": "¿Te sirvió la herramienta?",
+    "button": "Donar (Copiar Alias)",
+    "copied": "¡Alias copiado!"
   }
 }

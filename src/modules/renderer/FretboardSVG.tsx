@@ -35,8 +35,6 @@ const COLOR_FRET = '#C0B882';
 const COLOR_NUT = '#E8D8A0';
 /** String (steel) */
 const COLOR_STRING = '#C8C8C8';
-/** Annotation text color */
-const COLOR_ANNOTATION = '#FFD700';
 /** Annotation line color */
 const COLOR_DIMENSION = '#FFD700';
 
@@ -64,20 +62,6 @@ function formatMm(valueMm: number, unit: Unit): string {
     return converted.toFixed(3);
   }
   return converted.toFixed(1);
-}
-
-/**
- * Get display text for scale length */
-function getScaleLengthText(scaleLengths: number[], unit: Unit): string {
-  if (scaleLengths.length === 1) {
-    return `Scale: ${formatMm(scaleLengths[0], unit)} ${unit}`;
-  }
-  const min = Math.min(...scaleLengths);
-  const max = Math.max(...scaleLengths);
-  if (Math.abs(max - min) < 0.1) {
-    return `Scale: ${formatMm(min, unit)} ${unit}`;
-  }
-  return `Scale: ${formatMm(min, unit)} - ${formatMm(max, unit)} ${unit}`;
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -183,7 +167,7 @@ export function FretboardSVG({
   const { showStrings, showEdges, extendFrets, showAnnotations } = options;
   const vp = computeSvgViewport(result);
 
-  const { fretLines, strings: stringLines, outline, meta } = result;
+  const { fretLines, strings: stringLines, outline } = result;
 
   const scaleLengths = stringLines.map((s) => s.scaleLengthMm);
 

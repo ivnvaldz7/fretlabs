@@ -165,5 +165,10 @@
   "url": {
     "loaded": "Loaded design from share link.",
     "invalid": "Invalid share link. Loaded defaults instead."
+  },
+  "donations": {
+    "title": "Did you find this tool useful?",
+    "button": "Donate (Copy Alias)",
+    "copied": "Alias copied!"
   }
 }
