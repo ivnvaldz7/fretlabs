@@ -7,6 +7,8 @@ import type { Unit } from '../../config/constants';
 export interface ExportOptions {
   /** Target file format */
   format: 'svg' | 'dxf' | 'csv' | 'pdf';
+  /** Active application locale */
+  locale?: string;
   /** Unit for all coordinate / distance values in the exported file */
   unit: Unit;
   /**

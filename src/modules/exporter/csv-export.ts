@@ -14,6 +14,7 @@ import type { FretboardResult } from '../calculator/types';
 import type { ExportOptions } from './types';
 import { fromMm } from '../../utils/unit-converter';
 import { UNIT_PRECISION } from '../../config/constants';
+import { lineLength } from '../../utils/geometry';
 
 /**
  * Generate a CSV fret position table.
@@ -41,9 +42,9 @@ export function exportCsv(result: FretboardResult, options: ExportOptions): stri
 
   const numFrets = fretsPerString - 1;
 
-  // Calculate nut and bridge widths
-  const nutWidth = Math.abs(outline.nutLast.x - outline.nutFirst.x);
-  const bridgeWidth = Math.abs(outline.bridgeLast.x - outline.bridgeFirst.x);
+  // Calculate nut and bridge widths (Euclidean — handles both single-scale and fan-fret)
+  const nutWidth = lineLength(outline.nutFirst.x, outline.nutFirst.y, outline.nutLast.x, outline.nutLast.y);
+  const bridgeWidth = lineLength(outline.bridgeFirst.x, outline.bridgeFirst.y, outline.bridgeLast.x, outline.bridgeLast.y);
   const scaleLength = stringLines[0]?.scaleLengthMm ?? 0;
 
   const header = [

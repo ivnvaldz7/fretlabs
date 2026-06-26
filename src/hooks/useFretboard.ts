@@ -55,6 +55,8 @@ const DEFAULT_CONFIG: FretboardConfig = {
   overhang: {
     mode: 'equal',
     equalMm: DEFAULTS.OVERHANG_MM,
+    nutExtensionMm: DEFAULTS.NUT_EXTENSION_MM,
+    lastFretExtensionMm: DEFAULTS.LAST_FRET_EXTENSION_MM,
   },
   numFrets: DEFAULTS.NUM_FRETS,
   unit: DEFAULTS.UNIT,
@@ -155,6 +157,7 @@ function sanitizeLoadedConfig(raw: unknown): FretboardConfig | null {
     const mode = raw.overhang.mode;
     if (mode === 'equal' || mode === 'nutBridge' || mode === 'firstLast' || mode === 'all') {
       out.overhang = { mode };
+      // Lateral overhang fields
       const keys = [
         'equalMm',
         'nutMm',
@@ -174,6 +177,20 @@ function sanitizeLoadedConfig(raw: unknown): FretboardConfig | null {
             LIMITS.MIN_OVERHANG_MM,
             LIMITS.MAX_OVERHANG_MM,
             DEFAULTS.OVERHANG_MM,
+          );
+        }
+      }
+
+      // Longitudinal extension fields
+      const extKeys = ['nutExtensionMm', 'lastFretExtensionMm'] as const;
+      for (const k of extKeys) {
+        const v = (raw.overhang as Record<string, unknown>)[k];
+        if (typeof v === 'number' && Number.isFinite(v)) {
+          (out.overhang as unknown as Record<string, unknown>)[k] = clampNumber(
+            v,
+            LIMITS.MIN_EXTENSION_MM,
+            LIMITS.MAX_EXTENSION_MM,
+            k === 'nutExtensionMm' ? DEFAULTS.NUT_EXTENSION_MM : DEFAULTS.LAST_FRET_EXTENSION_MM,
           );
         }
       }
@@ -226,7 +243,20 @@ function sanitizeLoadedConfig(raw: unknown): FretboardConfig | null {
   }
 
   if (!out.overhang) {
-    out.overhang = { mode: 'equal', equalMm: DEFAULTS.OVERHANG_MM };
+    out.overhang = {
+      mode: 'equal',
+      equalMm: DEFAULTS.OVERHANG_MM,
+      nutExtensionMm: DEFAULTS.NUT_EXTENSION_MM,
+      lastFretExtensionMm: DEFAULTS.LAST_FRET_EXTENSION_MM,
+    };
+  } else {
+    // Ensure extension defaults are always present
+    if (out.overhang.nutExtensionMm === undefined) {
+      out.overhang.nutExtensionMm = DEFAULTS.NUT_EXTENSION_MM;
+    }
+    if (out.overhang.lastFretExtensionMm === undefined) {
+      out.overhang.lastFretExtensionMm = DEFAULTS.LAST_FRET_EXTENSION_MM;
+    }
   }
 
   return out;

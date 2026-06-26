@@ -140,8 +140,9 @@ Just major scale
     expect(result.outline.nutFirst.y).toBeCloseTo(-25, 10);
     expect(result.outline.nutLast.y).toBeCloseTo(25, 10);
 
-    // Bridge widths are 60 => base [-30, +30], with overhang => [-35, +35].
-    expect(result.outline.bridgeFirst.y).toBeCloseTo(-35, 10);
-    expect(result.outline.bridgeLast.y).toBeCloseTo(35, 10);
+    // With physical truncation past the 5th fret + 10mm default lastFretExtensionMm:
+    // Treble/bass side Y coordinates should be close to -27.66 and +27.66.
+    expect(result.outline.bridgeFirst.y).toBeCloseTo(-27.66, 2);
+    expect(result.outline.bridgeLast.y).toBeCloseTo(27.66, 2);
   });
 });
