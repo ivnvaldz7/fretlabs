@@ -25,18 +25,17 @@ import { lineLength } from '../../utils/geometry';
 
 // ── Visual constants ────────────────────────────────────────────────────────
 
-/** Fretboard wood fill (dark rosewood / ebony) */
-const COLOR_BOARD_FILL = '#3A1C08';
-/** Fretboard outline / edge stroke */
-const COLOR_BOARD_EDGE = '#1A0A02';
-/** Standard fret (nickel-silver) */
-const COLOR_FRET = '#C0B882';
-/** Nut (bone) */
-const COLOR_NUT = '#E8D8A0';
-/** String (steel) */
-const COLOR_STRING = '#C8C8C8';
-/** Annotation line color */
-const COLOR_DIMENSION = '#FFD700';
+/**
+ * SVG color tokens — driven by CSS custom properties so they adapt
+ * to the active theme (dark / light) without a React re-render.
+ * Defined in src/index.css via --svg-* variables.
+ */
+const COLOR_BOARD_FILL = 'var(--svg-board-fill, #3A1C08)';
+const COLOR_BOARD_EDGE = 'var(--svg-board-edge, #1A0A02)';
+const COLOR_FRET = 'var(--svg-fret, #C0B882)';
+const COLOR_NUT = 'var(--svg-nut, #E8D8A0)';
+const COLOR_STRING = 'var(--svg-string, #C8C8C8)';
+const COLOR_DIMENSION = 'var(--svg-dimension, #FFD700)';
 
 /** Fret stroke width in mm (a real fret slot is ~0.5mm wide) */
 const STROKE_FRET_MM = 0.6;

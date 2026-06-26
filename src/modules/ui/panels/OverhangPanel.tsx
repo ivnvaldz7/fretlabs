@@ -5,12 +5,16 @@
  * It is applied in the calculator to expand the outline quadrilateral.
  */
 
-import { fromMm, toMm } from '../../../utils/unit-converter';
+import { useState } from 'react';
+import { toDisplayValue, parseToMm, fromMm } from '../../../utils/unit-converter';
+import { INPUT_CLS, LABEL_CLS } from '../../../utils/ui-classes';
 import { useLocale } from '../../../hooks/useLocale';
+import { validatePositiveNumber } from '../../../utils/validators';
 import type { OverhangConfig, OverhangMode } from '../../calculator/types';
 import type { Unit } from '../../../config/constants';
 import { DEFAULTS, LIMITS } from '../../../config/constants';
 import { HelpTip } from '../display/HelpTip';
+import { FieldError } from '../shared/FieldError';
 
 const MODES: OverhangMode[] = ['equal', 'nutBridge', 'firstLast', 'all'];
 
@@ -20,25 +24,14 @@ interface OverhangPanelProps {
   onChange: (update: Partial<OverhangConfig>) => void;
 }
 
-function toDisplayValue(mm: number, unit: Unit): string {
-  return parseFloat(fromMm(mm, unit).toPrecision(7)).toString();
-}
-
-function parseToMm(raw: string, unit: Unit): number {
-  return toMm(parseFloat(raw), unit);
-}
-
 function ensure(overhang: OverhangConfig | undefined): OverhangConfig {
   return overhang ?? { mode: 'equal', equalMm: DEFAULTS.OVERHANG_MM };
 }
 
 export function OverhangPanel({ overhang, unit, onChange }: OverhangPanelProps) {
   const { t } = useLocale();
+  const [error, setError] = useState<string | null>(null);
   const oh = ensure(overhang);
-
-  const inputCls =
-    'w-full rounded border border-border bg-surface-elevated px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none';
-  const labelCls = 'mb-0.5 block text-xs text-text-muted';
 
   const clampOverhang = (mm: number): number => {
     if (!Number.isFinite(mm)) return DEFAULTS.OVERHANG_MM;
@@ -91,7 +84,7 @@ export function OverhangPanel({ overhang, unit, onChange }: OverhangPanelProps) 
 
       {oh.mode === 'equal' && (
         <div>
-          <label className={labelCls}>
+          <label className={LABEL_CLS}>
             {t('panel.overhang.equal')} ({unit})
             <HelpTip text={t('help.overhang.about')} />
           </label>
@@ -100,49 +93,61 @@ export function OverhangPanel({ overhang, unit, onChange }: OverhangPanelProps) 
             step="any"
             min={fromMm(LIMITS.MIN_OVERHANG_MM, unit)}
             max={fromMm(LIMITS.MAX_OVERHANG_MM, unit)}
-            className={inputCls}
+            className={INPUT_CLS}
             value={toDisplayValue(oh.equalMm ?? DEFAULTS.OVERHANG_MM, unit)}
             onChange={(e) => {
-              const mm = clampOverhang(parseToMm(e.target.value, unit));
-              if (!isNaN(mm)) onChange({ equalMm: mm });
+              const parsed = parseToMm(e.target.value, unit);
+              if (parsed === null) return;
+              const result = validatePositiveNumber(parsed);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ equalMm: clampOverhang(parsed) });
             }}
           />
+          <FieldError message={error} />
         </div>
       )}
 
       {oh.mode === 'nutBridge' && (
         <div className="space-y-2">
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.overhang.nut')} ({unit})
               <HelpTip text={t('help.overhang.about')} />
             </label>
             <input
               type="number"
               step="any"
-              className={inputCls}
+              className={INPUT_CLS}
               value={toDisplayValue(oh.nutMm ?? oh.equalMm ?? DEFAULTS.OVERHANG_MM, unit)}
               onChange={(e) => {
-                const mm = clampOverhang(parseToMm(e.target.value, unit));
-                if (!isNaN(mm)) onChange({ nutMm: mm });
+              const parsed = parseToMm(e.target.value, unit);
+              if (parsed === null) return;
+              const result = validatePositiveNumber(parsed);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ nutMm: clampOverhang(parsed) });
               }}
             />
+            <FieldError message={error} />
           </div>
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.overhang.bridge')} ({unit})
               <HelpTip text={t('help.overhang.about')} />
             </label>
             <input
               type="number"
               step="any"
-              className={inputCls}
+              className={INPUT_CLS}
               value={toDisplayValue(oh.bridgeMm ?? oh.equalMm ?? DEFAULTS.OVERHANG_MM, unit)}
               onChange={(e) => {
-                const mm = clampOverhang(parseToMm(e.target.value, unit));
-                if (!isNaN(mm)) onChange({ bridgeMm: mm });
+              const parsed = parseToMm(e.target.value, unit);
+              if (parsed === null) return;
+              const result = validatePositiveNumber(parsed);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ bridgeMm: clampOverhang(parsed) });
               }}
             />
+            <FieldError message={error} />
           </div>
         </div>
       )}
@@ -150,36 +155,44 @@ export function OverhangPanel({ overhang, unit, onChange }: OverhangPanelProps) 
       {oh.mode === 'firstLast' && (
         <div className="space-y-2">
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.overhang.first')} ({unit})
               <HelpTip text={t('help.overhang.about')} />
             </label>
             <input
               type="number"
               step="any"
-              className={inputCls}
+              className={INPUT_CLS}
               value={toDisplayValue(oh.firstMm ?? oh.equalMm ?? DEFAULTS.OVERHANG_MM, unit)}
               onChange={(e) => {
-                const mm = clampOverhang(parseToMm(e.target.value, unit));
-                if (!isNaN(mm)) onChange({ firstMm: mm });
+              const parsed = parseToMm(e.target.value, unit);
+              if (parsed === null) return;
+              const result = validatePositiveNumber(parsed);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ firstMm: clampOverhang(parsed) });
               }}
             />
+            <FieldError message={error} />
           </div>
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.overhang.last')} ({unit})
               <HelpTip text={t('help.overhang.about')} />
             </label>
             <input
               type="number"
               step="any"
-              className={inputCls}
+              className={INPUT_CLS}
               value={toDisplayValue(oh.lastMm ?? oh.equalMm ?? DEFAULTS.OVERHANG_MM, unit)}
               onChange={(e) => {
-                const mm = clampOverhang(parseToMm(e.target.value, unit));
-                if (!isNaN(mm)) onChange({ lastMm: mm });
+              const parsed = parseToMm(e.target.value, unit);
+              if (parsed === null) return;
+              const result = validatePositiveNumber(parsed);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ lastMm: clampOverhang(parsed) });
               }}
             />
+            <FieldError message={error} />
           </div>
         </div>
       )}
@@ -188,70 +201,86 @@ export function OverhangPanel({ overhang, unit, onChange }: OverhangPanelProps) 
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className={labelCls}>
+              <label className={LABEL_CLS}>
                 {t('panel.overhang.nutFirst')} ({unit})
                 <HelpTip text={t('help.overhang.about')} />
               </label>
               <input
                 type="number"
                 step="any"
-                className={inputCls}
+                className={INPUT_CLS}
                 value={toDisplayValue(oh.nutFirstMm ?? DEFAULTS.OVERHANG_MM, unit)}
                 onChange={(e) => {
-                  const mm = clampOverhang(parseToMm(e.target.value, unit));
-                  if (!isNaN(mm)) onChange({ nutFirstMm: mm });
+              const parsed = parseToMm(e.target.value, unit);
+              if (parsed === null) return;
+              const result = validatePositiveNumber(parsed);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ nutFirstMm: clampOverhang(parsed) });
                 }}
               />
+            <FieldError message={error} />
             </div>
             <div>
-              <label className={labelCls}>
+              <label className={LABEL_CLS}>
                 {t('panel.overhang.nutLast')} ({unit})
                 <HelpTip text={t('help.overhang.about')} />
               </label>
               <input
                 type="number"
                 step="any"
-                className={inputCls}
+                className={INPUT_CLS}
                 value={toDisplayValue(oh.nutLastMm ?? DEFAULTS.OVERHANG_MM, unit)}
                 onChange={(e) => {
-                  const mm = clampOverhang(parseToMm(e.target.value, unit));
-                  if (!isNaN(mm)) onChange({ nutLastMm: mm });
+              const parsed = parseToMm(e.target.value, unit);
+              if (parsed === null) return;
+              const result = validatePositiveNumber(parsed);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ nutLastMm: clampOverhang(parsed) });
                 }}
               />
+            <FieldError message={error} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className={labelCls}>
+              <label className={LABEL_CLS}>
                 {t('panel.overhang.bridgeFirst')} ({unit})
                 <HelpTip text={t('help.overhang.about')} />
               </label>
               <input
                 type="number"
                 step="any"
-                className={inputCls}
+                className={INPUT_CLS}
                 value={toDisplayValue(oh.bridgeFirstMm ?? DEFAULTS.OVERHANG_MM, unit)}
                 onChange={(e) => {
-                  const mm = clampOverhang(parseToMm(e.target.value, unit));
-                  if (!isNaN(mm)) onChange({ bridgeFirstMm: mm });
+              const parsed = parseToMm(e.target.value, unit);
+              if (parsed === null) return;
+              const result = validatePositiveNumber(parsed);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ bridgeFirstMm: clampOverhang(parsed) });
                 }}
               />
+            <FieldError message={error} />
             </div>
             <div>
-              <label className={labelCls}>
+              <label className={LABEL_CLS}>
                 {t('panel.overhang.bridgeLast')} ({unit})
                 <HelpTip text={t('help.overhang.about')} />
               </label>
               <input
                 type="number"
                 step="any"
-                className={inputCls}
+                className={INPUT_CLS}
                 value={toDisplayValue(oh.bridgeLastMm ?? DEFAULTS.OVERHANG_MM, unit)}
                 onChange={(e) => {
-                  const mm = clampOverhang(parseToMm(e.target.value, unit));
-                  if (!isNaN(mm)) onChange({ bridgeLastMm: mm });
+              const parsed = parseToMm(e.target.value, unit);
+              if (parsed === null) return;
+              const result = validatePositiveNumber(parsed);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ bridgeLastMm: clampOverhang(parsed) });
                 }}
               />
+            <FieldError message={error} />
             </div>
           </div>
         </div>
@@ -264,7 +293,7 @@ export function OverhangPanel({ overhang, unit, onChange }: OverhangPanelProps) 
         </p>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.overhang.nutExtension')} ({unit})
               <HelpTip text={t('help.overhang.nutExtension')} />
             </label>
@@ -273,20 +302,23 @@ export function OverhangPanel({ overhang, unit, onChange }: OverhangPanelProps) 
               step="any"
               min={fromMm(LIMITS.MIN_EXTENSION_MM, unit)}
               max={fromMm(LIMITS.MAX_EXTENSION_MM, unit)}
-              className={inputCls}
+              className={INPUT_CLS}
               value={toDisplayValue(oh.nutExtensionMm ?? DEFAULTS.NUT_EXTENSION_MM, unit)}
               onChange={(e) => {
-                const raw = parseFloat(e.target.value);
-                const mm = toMm(raw, unit);
-                if (!isNaN(mm)) {
+                const mm = parseToMm(e.target.value, unit);
+                if (mm === null) return;
+                const result = validatePositiveNumber(mm);
+                setError(result.valid ? null : result.error ?? null);
+                if (result.valid) {
                   const clamped = Math.min(LIMITS.MAX_EXTENSION_MM, Math.max(LIMITS.MIN_EXTENSION_MM, mm));
                   onChange({ nutExtensionMm: clamped });
                 }
               }}
             />
+            <FieldError message={error} />
           </div>
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.overhang.lastFretExtension')} ({unit})
               <HelpTip text={t('help.overhang.lastFretExtension')} />
             </label>
@@ -295,17 +327,20 @@ export function OverhangPanel({ overhang, unit, onChange }: OverhangPanelProps) 
               step="any"
               min={fromMm(LIMITS.MIN_EXTENSION_MM, unit)}
               max={fromMm(LIMITS.MAX_EXTENSION_MM, unit)}
-              className={inputCls}
+              className={INPUT_CLS}
               value={toDisplayValue(oh.lastFretExtensionMm ?? DEFAULTS.LAST_FRET_EXTENSION_MM, unit)}
               onChange={(e) => {
-                const raw = parseFloat(e.target.value);
-                const mm = toMm(raw, unit);
-                if (!isNaN(mm)) {
+                const mm = parseToMm(e.target.value, unit);
+                if (mm === null) return;
+                const result = validatePositiveNumber(mm);
+                setError(result.valid ? null : result.error ?? null);
+                if (result.valid) {
                   const clamped = Math.min(LIMITS.MAX_EXTENSION_MM, Math.max(LIMITS.MIN_EXTENSION_MM, mm));
                   onChange({ lastFretExtensionMm: clamped });
                 }
               }}
             />
+            <FieldError message={error} />
           </div>
         </div>
       </div>

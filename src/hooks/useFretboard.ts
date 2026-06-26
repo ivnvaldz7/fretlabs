@@ -9,7 +9,7 @@
  * or worker is needed.
  */
 
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { calculateFretboard } from '../modules/calculator/engine';
 import { ScalaParseError } from '../modules/calculator/scala-parser';
 import type {
@@ -19,11 +19,24 @@ import type {
   StringConfig,
   CalculationConfig,
   OverhangConfig,
+  CompensationConfig,
 } from '../modules/calculator/types';
 import type { Unit } from '../config/constants';
-import { DEFAULTS, LIMITS } from '../config/constants';
+import {
+  DEFAULTS,
+  LIMITS,
+  WARN_MAX_FRETS,
+  WARN_MAX_STRINGS,
+  WARN_MIN_SCALE_LENGTH,
+  WARN_MAX_SCALE_LENGTH,
+} from '../config/constants';
+import { useLocale } from './useLocale';
 import type { InstrumentPreset } from '../config/presets';
 import { isUrlPayloadV1, parseConfigFromHash, serializeConfigToHash } from '../utils/url-state';
+
+// ── Undo/redo constants ──────────────────────────────────────────────────────
+const MAX_HISTORY = 50;
+const COALESCE_MS = 300;
 
 // ── Default config (Fender Stratocaster, equal temperament, mm) ─────────────
 
@@ -235,6 +248,41 @@ function sanitizeLoadedConfig(raw: unknown): FretboardConfig | null {
     delete out.calculation.tuning;
   }
 
+  // compensation
+  if (isRecord(raw.compensation)) {
+    const mode = raw.compensation.mode;
+    if (mode === 'equal' || mode === 'perString') {
+      const comp: CompensationConfig = { mode };
+
+      if (mode === 'equal') {
+        comp.equalMm = clampNumber(
+          raw.compensation.equalMm,
+          LIMITS.MIN_COMPENSATION_MM,
+          LIMITS.MAX_COMPENSATION_MM,
+          0,
+        );
+      } else {
+        comp.equalMm = clampNumber(
+          raw.compensation.equalMm,
+          LIMITS.MIN_COMPENSATION_MM,
+          LIMITS.MAX_COMPENSATION_MM,
+          0,
+        );
+        if (Array.isArray(raw.compensation.perStringMm)) {
+          comp.perStringMm = raw.compensation.perStringMm
+            .slice(0, out.strings.count)
+            .map((v: unknown) =>
+              clampNumber(v, LIMITS.MIN_COMPENSATION_MM, LIMITS.MAX_COMPENSATION_MM, comp.equalMm),
+            );
+        } else {
+          comp.perStringMm = Array<number>(out.strings.count).fill(comp.equalMm);
+        }
+      }
+
+      out.compensation = comp;
+    }
+  }
+
   // Keep multi mode coherent
   if (out.scaleLength.mode === 'multi') {
     if (typeof out.scaleLength.lastMm !== 'number') out.scaleLength.lastMm = out.scaleLength.fundamentalMm;
@@ -275,6 +323,8 @@ export interface UseFretboardReturn {
   notice: string | null;
   /** Clear notice banner */
   clearNotice: () => void;
+  /** Non-blocking warnings about the current config */
+  warnings: string[];
   /** Update the scale length section */
   updateScaleLength: (update: Partial<ScaleLengthConfig>) => void;
   /** Update the strings section */
@@ -283,12 +333,32 @@ export interface UseFretboardReturn {
   updateCalculation: (update: Partial<CalculationConfig>) => void;
   /** Update the overhang section */
   updateOverhang: (update: Partial<OverhangConfig>) => void;
+  /** Update the compensation section */
+  updateCompensation: (update: Partial<CompensationConfig>) => void;
   /** Set the number of frets */
   setNumFrets: (n: number) => void;
   /** Set the display unit (mm / in / cm) */
   setUnit: (u: Unit) => void;
   /** Replace the current config with values from a preset */
   applyPreset: (preset: InstrumentPreset) => void;
+  // ── Compare mode ────────────────────────────────────────────────────
+  /** Snapshot of the result for side-by-side comparison, or null */
+  compareResult: FretboardResult | null;
+  /** Whether compare mode is active */
+  isCompareMode: boolean;
+  /** Enter compare mode: snapshots the current result */
+  enterCompareMode: () => void;
+  /** Exit compare mode: discards the snapshot */
+  exitCompareMode: () => void;
+  // ── Undo/redo ──────────────────────────────────────────────────────
+  /** Undo the last config change */
+  undo: () => void;
+  /** Redo a previously undone config change */
+  redo: () => void;
+  /** Whether undo is available */
+  canUndo: boolean;
+  /** Whether redo is available */
+  canRedo: boolean;
 }
 
 /**
@@ -297,11 +367,89 @@ export interface UseFretboardReturn {
  * @returns State, result, error, and typed setters
  */
 export function useFretboard(): UseFretboardReturn {
-  const [config, setConfig] = useState<FretboardConfig>(DEFAULT_CONFIG);
+  const [config, setConfigState] = useState<FretboardConfig>(DEFAULT_CONFIG);
   const [notice, setNotice] = useState<string | null>(null);
+  const { t } = useLocale();
 
   const didInitFromUrl = useRef(false);
   const isApplyingUrl = useRef(false);
+
+  // ── Undo/redo state ────────────────────────────────────────────────────
+  const historyRef = useRef<{ past: FretboardConfig[]; future: FretboardConfig[] }>({
+    past: [],
+    future: [],
+  });
+  const coalesceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Wrapped setter that tracks history with coalescing for rapid changes.
+  // IMPORTANT: ref mutations happen OUTSIDE setConfigState to avoid React
+  // StrictMode double-invocation issues (functional updaters are called twice
+  // in dev — the second call would see a mutated ref and skip history).
+  const setConfig = useCallback(
+    (updater: FretboardConfig | ((prev: FretboardConfig) => FretboardConfig)) => {
+      const prev = config;
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+
+      if (!isApplyingUrl.current) {
+        if (!coalesceTimer.current) {
+          const newPast = [...historyRef.current.past, structuredClone(prev)];
+          if (newPast.length > MAX_HISTORY) newPast.shift();
+          historyRef.current = { past: newPast, future: [] };
+        }
+        if (coalesceTimer.current) clearTimeout(coalesceTimer.current);
+        coalesceTimer.current = setTimeout(() => {
+          coalesceTimer.current = null;
+        }, COALESCE_MS);
+      }
+
+      setConfigState(next);
+    },
+    [config],
+  );
+
+  const canUndo = historyRef.current.past.length > 0;
+  const canRedo = historyRef.current.future.length > 0;
+
+  const undo = useCallback(() => {
+    const current = config;
+    const history = historyRef.current;
+    if (history.past.length === 0) return;
+    const newPast = [...history.past];
+    const previous = newPast.pop()!;
+    historyRef.current = {
+      past: newPast,
+      future: [structuredClone(current), ...history.future],
+    };
+    setConfigState(previous);
+  }, [config]);
+
+  const redo = useCallback(() => {
+    const current = config;
+    const history = historyRef.current;
+    if (history.future.length === 0) return;
+    const newFuture = [...history.future];
+    const next = newFuture.shift()!;
+    historyRef.current = {
+      past: [...history.past, structuredClone(current)],
+      future: newFuture,
+    };
+    setConfigState(next);
+  }, [config]);
+
+  // ── Keyboard shortcuts ────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key !== 'z') return;
+      e.preventDefault();
+      if (e.shiftKey) {
+        redo();
+      } else {
+        undo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo]);
 
   const clearNotice = () => setNotice(null);
 
@@ -356,6 +504,27 @@ export function useFretboard(): UseFretboardReturn {
       // Ignore URL update failures (very old browsers or restricted environments)
     }
   }, [config]);
+
+  // Compute non-blocking warnings based on current config
+  const warnings = useMemo(() => {
+    const w: string[] = [];
+    const scaleLength = config.scaleLength.fundamentalMm;
+
+    if (config.numFrets > WARN_MAX_FRETS) {
+      w.push(t('warnings.fretCount', { count: config.numFrets }));
+    }
+    if (config.strings.count > WARN_MAX_STRINGS) {
+      w.push(t('warnings.stringCount', { count: config.strings.count }));
+    }
+    if (scaleLength < WARN_MIN_SCALE_LENGTH) {
+      w.push(t('warnings.scaleLengthMin', { value: scaleLength }));
+    }
+    if (scaleLength > WARN_MAX_SCALE_LENGTH) {
+      w.push(t('warnings.scaleLengthMax', { value: scaleLength }));
+    }
+
+    return w;
+  }, [config, t]);
 
   // Re-run the calculator whenever config changes.
   // ScalaParseError gets mapped to the i18n key so the UI can translate it.
@@ -498,6 +667,32 @@ export function useFretboard(): UseFretboardReturn {
     }));
   };
 
+  const updateCompensation = (update: Partial<CompensationConfig>) => {
+    setConfig((prev) => {
+      // Retain prior perStringMm array when switching to equal mode
+      // so switching back to perString restores the array.
+      const prevComp = prev.compensation;
+      const next: CompensationConfig = {
+        mode: prevComp?.mode ?? 'equal',
+        equalMm: prevComp?.equalMm ?? 0,
+        perStringMm: prevComp?.perStringMm,
+        ...update,
+      };
+
+      // Initialize perStringMm when switching to perString mode
+      if (next.mode === 'perString' && (!next.perStringMm || next.perStringMm.length < prev.strings.count)) {
+        next.perStringMm = Array<number>(prev.strings.count).fill(next.equalMm);
+      }
+
+      // Trim/resize perStringMm when string count changes
+      if (next.perStringMm && next.perStringMm.length > prev.strings.count) {
+        next.perStringMm = next.perStringMm.slice(0, prev.strings.count);
+      }
+
+      return { ...prev, compensation: next };
+    });
+  };
+
   const setNumFrets = (n: number) => {
     setConfig((prev) => ({ ...prev, numFrets: n }));
   };
@@ -526,6 +721,21 @@ export function useFretboard(): UseFretboardReturn {
     }));
   };
 
+  // ── Compare mode ──────────────────────────────────────────────────────
+  const [compareResult, setCompareResult] = useState<FretboardResult | null>(null);
+  const [isCompareMode, setIsCompareMode] = useState(false);
+
+  const enterCompareMode = useCallback(() => {
+    if (!result) return;
+    setCompareResult(structuredClone(result));
+    setIsCompareMode(true);
+  }, [result]);
+
+  const exitCompareMode = useCallback(() => {
+    setIsCompareMode(false);
+    setCompareResult(null);
+  }, []);
+
   return {
     config,
     result,
@@ -533,12 +743,22 @@ export function useFretboard(): UseFretboardReturn {
     errorDetail,
     notice,
     clearNotice,
+    warnings,
     updateScaleLength,
     updateStrings,
     updateCalculation,
     updateOverhang,
+    updateCompensation,
     setNumFrets,
     setUnit,
     applyPreset,
+    compareResult,
+    isCompareMode,
+    enterCompareMode,
+    exitCompareMode,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   };
 }

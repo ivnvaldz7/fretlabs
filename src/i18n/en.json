@@ -5,8 +5,16 @@
   },
   "nav": {
     "design": "Design",
-    "table": "Fret Table",
+    "table": "Fret table",
     "export": "Export"
+  },
+  "undo": {
+    "button": "Undo",
+    "shortcut": "Undo (Ctrl+Z)"
+  },
+  "redo": {
+    "button": "Redo",
+    "shortcut": "Redo (Ctrl+Shift+Z)"
   },
   "panel": {
     "preset": {
@@ -75,6 +83,24 @@
       "scalaInput": "Paste Scala SCL content",
       "tuning": "Tuning (scale steps per string)"
     },
+    "compensation": {
+      "label": "Compensation",
+      "mode": {
+        "equal": "Equal",
+        "perString": "Per string"
+      },
+      "offset": "Saddle offset"
+    },
+    "scalePreset": {
+      "label": "Scale preset",
+      "placeholder": "Select a scale...",
+      "category": {
+        "equal": "Equal Temperament",
+        "just": "Just Intonation",
+        "historical": "Historical",
+        "microtonal": "Microtonal / Exotic"
+      }
+    },
     "units": {
       "label": "Units",
       "precision": "Display precision",
@@ -122,6 +148,10 @@
       "scalaInput": "Paste a .scl file. The interval count must match the declared number.",
       "tuning": "For Scala: which scale step each string uses as its open string (0 = unison)."
     },
+    "compensation": {
+      "about": "Shifts each string's saddle back to correct intonation. Thicker strings need more compensation (2\u20135mm typical for wound, 1\u20133mm for plain). Set to 0 for no compensation."
+    },
+    "scalePreset": "Select a preloaded scale. The textarea below will be updated automatically. You can still edit it manually.",
     "export": {
       "extendFrets": "Extends fret lines to the fretboard outline for cleaner CNC/print exports."
     }
@@ -150,12 +180,31 @@
     "csv": "Download CSV",
     "pdf": "Download PDF"
   },
+  "export.pdf.title": "FretLabs — Real Scale (1:1) Print & Assembly",
+  "export.pdf.paperSize": "Paper size:",
+  "export.pdf.instructionsTitle": "⚠️ IMPORTANT: Print Configuration",
+  "export.pdf.instructionsText": "For physical measurements to be EXACT on paper, in the print dialog set the <strong>Scale to 100%</strong> (do not fit to printable area) and <strong>Margins to 'None'</strong> (or borderless).",
+  "export.pdf.print": "Print / Save PDF",
+  "export.pdf.close": "Close",
+  "export.pdf.pageOf": "Page {current} of {total}",
+  "export.pdf.cutHere": "✂️ CUT HERE & ALIGN WITH PAGE {next}",
+  "export.pdf.alignHere": "🟢 ALIGN PAGE {prev} HERE",
+  "warnings": {
+    "fretCount": "Using {count} frets — the preview may appear very dense.",
+    "stringCount": "Using {count} strings — the preview may appear very dense.",
+    "scaleLengthMin": "Scale length of {value}mm is very short — fret spacing will be minimal.",
+    "scaleLengthMax": "Scale length of {value}mm is very long — verify it fits your design."
+  },
   "errors": {
     "invalidScala": "Invalid Scala file. Check that the number of intervals matches the declared count.",
     "invalidNumber": "Please enter a valid number.",
     "outOfRange": "Value must be between {min} and {max}.",
     "minStrings": "At least 1 string is required.",
     "minFrets": "At least 1 fret is required."
+  },
+  "theme": {
+    "dark": "Dark mode",
+    "light": "Light mode"
   },
   "language": {
     "label": "Language",
@@ -170,5 +219,11 @@
     "title": "Did you find this tool useful?",
     "button": "Donate (Copy Alias)",
     "copied": "Alias copied!"
+  },
+  "compare": {
+    "enter": "Compare",
+    "exit": "Exit compare",
+    "live": "Current design",
+    "reference": "Reference (frozen)"
   }
 }

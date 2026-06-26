@@ -29,6 +29,7 @@ import type {
   FretboardOutline,
   CalculationMeta,
   OverhangConfig,
+  CompensationConfig,
 } from './types';
 import { LIMITS, DEFAULTS } from '../../config/constants';
 import { normalizeVector } from '../../utils/geometry';
@@ -54,7 +55,7 @@ export class CalculationError extends Error {
  * @throws CalculationError for invalid inputs
  */
 function validateConfig(config: FretboardConfig): void {
-  const { numFrets, strings, scaleLength, calculation, overhang } = config;
+  const { numFrets, strings, scaleLength, calculation, overhang, compensation } = config;
 
   if (numFrets < LIMITS.MIN_FRETS || numFrets > LIMITS.MAX_FRETS) {
     throw new CalculationError(
@@ -146,6 +147,42 @@ function validateConfig(config: FretboardConfig): void {
           'Scala tuning values must be non-negative integers (scale degrees)',
           `tuning[${i}] = ${String(v)}`,
         );
+      }
+    }
+  }
+
+  if (compensation) {
+    if (compensation.mode === 'equal') {
+      const v = compensation.equalMm;
+      if (
+        !Number.isFinite(v) ||
+        v < LIMITS.MIN_COMPENSATION_MM ||
+        v > LIMITS.MAX_COMPENSATION_MM
+      ) {
+        throw new CalculationError(
+          `Compensation must be between ${LIMITS.MIN_COMPENSATION_MM}mm and ${LIMITS.MAX_COMPENSATION_MM}mm`,
+          `Received: ${String(v)}`,
+        );
+      }
+    } else if (compensation.mode === 'perString') {
+      const arr = compensation.perStringMm;
+      if (!arr || arr.length < strings.count) {
+        throw new CalculationError(
+          'perString compensation requires perStringMm with one value per string',
+          `Received ${arr?.length ?? 0} values for ${strings.count} strings`,
+        );
+      }
+      for (let i = 0; i < arr.length; i++) {
+        if (
+          !Number.isFinite(arr[i]) ||
+          arr[i] < LIMITS.MIN_COMPENSATION_MM ||
+          arr[i] > LIMITS.MAX_COMPENSATION_MM
+        ) {
+          throw new CalculationError(
+            `Compensation value out of range for string ${i}`,
+            `Expected ${LIMITS.MIN_COMPENSATION_MM}..${LIMITS.MAX_COMPENSATION_MM}mm, received: ${String(arr[i])}`,
+          );
+        }
       }
     }
   }
@@ -244,28 +281,52 @@ function resolveOverhangCornersMm(
  * @param config - Full fretboard config (must have passed validateConfig)
  * @returns Array of scale lengths in mm, one per string
  */
+function resolveCompensation(config: FretboardConfig): number[] {
+  const { compensation, strings } = config;
+  const n = strings.count;
+
+  if (!compensation) {
+    return Array<number>(n).fill(0);
+  }
+
+  if (compensation.mode === 'equal') {
+    return Array<number>(n).fill(compensation.equalMm);
+  }
+
+  // perString mode — validated above
+  const arr = compensation.perStringMm as number[];
+  return arr.length >= n ? arr.slice(0, n) : [...arr, ...Array<number>(n - arr.length).fill(0)];
+}
+
 function resolveScaleLengths(config: FretboardConfig): number[] {
   const { scaleLength, strings } = config;
   const n = strings.count;
 
+  // Theoretical scale lengths
+  let theoretical: number[];
+
   switch (scaleLength.mode) {
     case 'single':
-      // All strings share the same scale length
-      return Array<number>(n).fill(scaleLength.fundamentalMm);
+      theoretical = Array<number>(n).fill(scaleLength.fundamentalMm);
+      break;
 
     case 'multi': {
       const s0 = scaleLength.fundamentalMm;
       const s1 = scaleLength.lastMm as number; // validated above
-      // Linear interpolation: treble string = s0, bass string = s1
-      return Array.from({ length: n }, (_, i) =>
+      theoretical = Array.from({ length: n }, (_, i) =>
         n === 1 ? s0 : s0 + ((s1 - s0) * i) / (n - 1),
       );
+      break;
     }
 
     case 'individual':
-      // Explicit per-string scale lengths (validated above)
-      return (scaleLength.individualMm as number[]).slice(0, n);
+      theoretical = (scaleLength.individualMm as number[]).slice(0, n);
+      break;
   }
+
+  // Apply intonation compensation: effective = theoretical + compensation
+  const compensation = resolveCompensation(config);
+  return theoretical.map((s, i) => s + compensation[i]);
 }
 
 /**

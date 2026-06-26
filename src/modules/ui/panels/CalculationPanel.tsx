@@ -5,9 +5,16 @@
  * Scala mode: exposes a textarea for pasting a .scl file's content.
  */
 
+import { useState } from 'react';
+import { INPUT_CLS, LABEL_CLS } from '../../../utils/ui-classes';
 import { useLocale } from '../../../hooks/useLocale';
+import { validatePositiveNumber } from '../../../utils/validators';
+import { SCALE_PRESETS } from '../../../config/scale-presets';
 import type { CalculationConfig, CalculationMethod } from '../../calculator/types';
+import type { ScalePreset } from '../../../config/scale-presets';
 import { HelpTip } from '../display/HelpTip';
+import { FieldError } from '../shared/FieldError';
+import { ScalePresetSelector } from './ScalePresetSelector';
 
 interface CalculationPanelProps {
   calculation: CalculationConfig;
@@ -15,21 +22,7 @@ interface CalculationPanelProps {
   onChange: (update: Partial<CalculationConfig>) => void;
 }
 
-const DEFAULT_12TET_SCL = `! 12tet.scl
-12 equal temperament
-12
-100.
-200.
-300.
-400.
-500.
-600.
-700.
-800.
-900.
-1000.
-1100.
-2/1`;
+const PRESET_12TET_SCL = SCALE_PRESETS.find((p) => p.id === '12-tet')!.sclContent;
 
 /**
  * Calculation method configuration panel.
@@ -40,10 +33,11 @@ const DEFAULT_12TET_SCL = `! 12tet.scl
  */
 export function CalculationPanel({ calculation, numStrings, onChange }: CalculationPanelProps) {
   const { t } = useLocale();
+  const [error, setError] = useState<string | null>(null);
 
-  const inputCls =
-    'w-full rounded border border-border bg-surface-elevated px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none';
-  const labelCls = 'mb-0.5 block text-xs text-text-muted';
+  const handleScalePreset = (preset: ScalePreset) => {
+    onChange({ ...calculation, scalaContent: preset.sclContent });
+  };
 
   return (
     <section>
@@ -63,7 +57,7 @@ export function CalculationPanel({ calculation, numStrings, onChange }: Calculat
                     method,
                     scalaContent: (calculation.scalaContent ?? '').trim()
                       ? calculation.scalaContent
-                      : DEFAULT_12TET_SCL,
+                      : PRESET_12TET_SCL,
                     tuning:
                       calculation.tuning && calculation.tuning.length >= numStrings
                         ? calculation.tuning
@@ -87,7 +81,7 @@ export function CalculationPanel({ calculation, numStrings, onChange }: Calculat
         {/* Equal temperament: tones per octave (12 = standard, 19, 24, 31, etc.) */}
         {calculation.method === 'equal' && (
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.calculation.tonesPerOctave')}
               <HelpTip text={t('help.calculation.tonesPerOctave')} />
             </label>
@@ -96,26 +90,31 @@ export function CalculationPanel({ calculation, numStrings, onChange }: Calculat
               min="1"
               max="144"
               step="1"
-              className={inputCls}
+              className={INPUT_CLS}
               value={calculation.tonesPerOctave}
               onChange={(e) => {
                 const n = parseInt(e.target.value, 10);
-                if (!isNaN(n) && n >= 1) onChange({ tonesPerOctave: n });
+                if (isNaN(n)) return;
+                const result = validatePositiveNumber(n);
+                setError(result.valid ? null : result.error ?? null);
+                if (result.valid) onChange({ tonesPerOctave: n });
               }}
             />
+            <FieldError message={error} />
           </div>
         )}
 
         {/* Scala: paste the raw .scl file content */}
         {calculation.method === 'scala' && (
           <>
+            <ScalePresetSelector onSelect={handleScalePreset} />
             <div>
-              <label className={labelCls}>
+              <label className={LABEL_CLS}>
                 {t('panel.calculation.scalaInput')}
                 <HelpTip text={t('help.calculation.scalaInput')} />
               </label>
               <textarea
-                className={`${inputCls} font-mono text-xs leading-relaxed`}
+                className={`${INPUT_CLS} font-mono text-xs leading-relaxed`}
                 rows={9}
                 spellCheck={false}
                 placeholder={
@@ -127,7 +126,7 @@ export function CalculationPanel({ calculation, numStrings, onChange }: Calculat
             </div>
 
             <div>
-              <label className={labelCls}>
+              <label className={LABEL_CLS}>
                 {t('panel.calculation.tuning')}
                 <HelpTip text={t('help.calculation.tuning')} />
               </label>
@@ -148,7 +147,7 @@ export function CalculationPanel({ calculation, numStrings, onChange }: Calculat
                         type="number"
                         step="1"
                         min="0"
-                        className={`${inputCls} flex-1 font-mono`}
+                        className={`${INPUT_CLS} flex-1 font-mono`}
                         value={v}
                         onChange={(e) => {
                           const n = parseInt(e.target.value, 10);

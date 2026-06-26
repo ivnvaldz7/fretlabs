@@ -5,23 +5,20 @@
  * before updating the config.
  */
 
-import { fromMm, toMm } from '../../../utils/unit-converter';
+import { useState } from 'react';
+import { toDisplayValue, parseToMm } from '../../../utils/unit-converter';
+import { INPUT_CLS, LABEL_CLS } from '../../../utils/ui-classes';
 import { useLocale } from '../../../hooks/useLocale';
+import { validateNumStrings, validatePositiveNumber } from '../../../utils/validators';
 import type { StringConfig, SpacingMode } from '../../calculator/types';
 import type { Unit } from '../../../config/constants';
 import { HelpTip } from '../display/HelpTip';
+import { FieldError } from '../shared/FieldError';
 
 interface StringsPanelProps {
   strings: StringConfig;
   unit: Unit;
   onChange: (update: Partial<StringConfig>) => void;
-}
-
-/**
- * Convert mm to a display string in the given unit (7 sig figs, no trailing zeros).
- */
-function toDisplayValue(mm: number, unit: Unit): string {
-  return parseFloat(fromMm(mm, unit).toPrecision(7)).toString();
 }
 
 /**
@@ -33,10 +30,7 @@ function toDisplayValue(mm: number, unit: Unit): string {
  */
 export function StringsPanel({ strings, unit, onChange }: StringsPanelProps) {
   const { t } = useLocale();
-
-  const inputCls =
-    'w-full rounded border border-border bg-surface-elevated px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none';
-  const labelCls = 'mb-0.5 block text-xs text-text-muted';
+  const [error, setError] = useState<string | null>(null);
 
   const gauges = strings.gauges ?? [];
 
@@ -49,7 +43,7 @@ export function StringsPanel({ strings, unit, onChange }: StringsPanelProps) {
       <div className="space-y-2">
         {/* String count */}
         <div>
-          <label className={labelCls}>
+          <label className={LABEL_CLS}>
             {t('panel.strings.count')}
             <HelpTip text={t('help.strings.count')} />
           </label>
@@ -58,54 +52,66 @@ export function StringsPanel({ strings, unit, onChange }: StringsPanelProps) {
             min="1"
             max="24"
             step="1"
-            className={inputCls}
+            className={INPUT_CLS}
             value={strings.count}
             onChange={(e) => {
               const n = parseInt(e.target.value, 10);
-              if (!isNaN(n) && n >= 1) onChange({ count: n });
+              if (isNaN(n)) return;
+              const result = validateNumStrings(n);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ count: n });
             }}
           />
+          <FieldError message={error} />
         </div>
 
         {/* Nut width */}
         <div>
-          <label className={labelCls}>
+          <label className={LABEL_CLS}>
             {t('panel.strings.nutWidth')} ({unit})
             <HelpTip text={t('help.strings.nutWidth')} />
           </label>
           <input
             type="number"
             step="any"
-            className={inputCls}
+            className={INPUT_CLS}
             value={toDisplayValue(strings.nutWidthMm, unit)}
             onChange={(e) => {
-              const mm = toMm(parseFloat(e.target.value), unit);
-              if (!isNaN(mm) && mm > 0) onChange({ nutWidthMm: mm });
+              const mm = parseToMm(e.target.value, unit);
+              if (mm === null) return;
+              const result = validatePositiveNumber(mm);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ nutWidthMm: mm });
             }}
           />
+          <FieldError message={error} />
         </div>
 
         {/* Bridge width */}
         <div>
-          <label className={labelCls}>
+          <label className={LABEL_CLS}>
             {t('panel.strings.bridgeWidth')} ({unit})
             <HelpTip text={t('help.strings.bridgeWidth')} />
           </label>
           <input
             type="number"
             step="any"
-            className={inputCls}
+            className={INPUT_CLS}
             value={toDisplayValue(strings.bridgeWidthMm, unit)}
             onChange={(e) => {
-              const mm = toMm(parseFloat(e.target.value), unit);
-              if (!isNaN(mm) && mm > 0) onChange({ bridgeWidthMm: mm });
+              const mm = parseToMm(e.target.value, unit);
+              if (mm === null) return;
+              const result = validatePositiveNumber(mm);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ bridgeWidthMm: mm });
             }}
           />
+          <FieldError message={error} />
         </div>
 
         {/* Spacing mode */}
         <div>
-          <label className={labelCls}>
+          <label className={LABEL_CLS}>
             {t('panel.strings.spacing.label')}
             <HelpTip text={t('help.strings.spacing')} />
           </label>
@@ -132,7 +138,7 @@ export function StringsPanel({ strings, unit, onChange }: StringsPanelProps) {
         {/* Gauges (only for proportional spacing) */}
         {strings.spacing === 'proportional' && (
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.strings.gauges')} (in)
               <HelpTip text={t('help.strings.gauges')} />
             </label>
@@ -148,14 +154,17 @@ export function StringsPanel({ strings, unit, onChange }: StringsPanelProps) {
                       type="number"
                       step="any"
                       min="0"
-                      className={`${inputCls} flex-1 font-mono`}
+                      className={`${INPUT_CLS} flex-1 font-mono`}
                       value={v}
                       onChange={(e) => {
-                        const next = [...Array<number>(strings.count)].map((_, j) =>
-                          typeof gauges[j] === 'number' ? gauges[j] : 0.010,
-                        );
                         const n = parseFloat(e.target.value);
-                        if (!isNaN(n) && n > 0) {
+                        if (isNaN(n)) return;
+                        const result = validatePositiveNumber(n);
+                        setError(result.valid ? null : result.error ?? null);
+                        if (result.valid) {
+                          const next = [...Array<number>(strings.count)].map((_, j) =>
+                            typeof gauges[j] === 'number' ? gauges[j] : 0.010,
+                          );
                           next[i] = n;
                           onChange({ gauges: next });
                         }

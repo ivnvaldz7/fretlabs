@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
-/* ── FretLabs Design Tokens ── */
+/* ── Custom variants for theme switching (class-based on [data-theme]) ── */
+@custom-variant theme-light (&:where([data-theme="light"] *));
+@custom-variant theme-dark (&:where([data-theme="dark"] *));
+
+/* ── FretLabs Design Tokens (dark theme — default) ── */
 @theme {
   --color-primary: #0F7B6C;
   --color-primary-light: #14A891;
@@ -16,6 +20,44 @@
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-error: #EF4444;
+}
+
+/* ── Light theme overrides ── */
+@variant theme-light {
+  --color-surface: #F8F9FA;
+  --color-surface-alt: #F1F3F5;
+  --color-surface-elevated: #FFFFFF;
+  --color-border: #DEE2E6;
+  --color-text: #212529;
+  --color-text-muted: #6C757D;
+  --color-text-dim: #ADB5BD;
+  --color-primary: #0F7B6C;
+  --color-primary-light: #14A891;
+  --color-primary-dark: #0A5C51;
+  --color-accent: #D6336C;
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+}
+
+/* ── SVG theme colors (used by FretboardSVG) ── */
+:root,
+[data-theme="dark"] {
+  --svg-board-fill: #3A1C08;
+  --svg-board-edge: #1A0A02;
+  --svg-fret: #C0B882;
+  --svg-nut: #E8D8A0;
+  --svg-string: #C8C8C8;
+  --svg-dimension: #FFD700;
+}
+
+[data-theme="light"] {
+  --svg-board-fill: #D4A06A;
+  --svg-board-edge: #8B5E3C;
+  --svg-fret: #888888;
+  --svg-nut: #F5E6C8;
+  --svg-string: #555555;
+  --svg-dimension: #2563EB;
 }
 
 /* ── Base ── */

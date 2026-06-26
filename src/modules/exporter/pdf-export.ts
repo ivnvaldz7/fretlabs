@@ -10,6 +10,8 @@
 import type { FretboardResult } from '../calculator/types';
 import type { ExportOptions } from './types';
 import { exportSvg } from './svg-export';
+import en from '../../i18n/en.json';
+import es from '../../i18n/es.json';
 
 function escapeHtml(s: string): string {
   return s
@@ -34,30 +36,10 @@ export function exportPdfHtml(result: FretboardResult, options: ExportOptions): 
 
   const locale = options.locale === 'es' ? 'es' : 'en';
 
-  const translations = {
-    es: {
-      title: "FretLabs — Impresión y Armado a Escala Real (1:1)",
-      paperSize: "Tamaño de papel:",
-      instructionsTitle: "⚠️ IMPORTANTE: Configuración de Impresión",
-      instructionsText: "Para que las medidas físicas sean EXACTAS en el papel, en la ventana de impresión configurá la <strong>Escala al 100%</strong> (sin ajustar al área de impresión) y los <strong>Márgenes en 'Ninguno'</strong> (o márgenes a cero / sin bordes).",
-      print: "Imprimir / Guardar PDF",
-      close: "Cerrar",
-      pageOf: "Página {current} de {total}",
-      cutHere: "✂️ CORTAR POR AQUÍ Y UNIR A PÁG. {next}",
-      alignHere: "🟢 ALINEAR AQUÍ PÁG. {prev}",
-    },
-    en: {
-      title: "FretLabs — Real Scale (1:1) Print & Assembly",
-      paperSize: "Paper size:",
-      instructionsTitle: "⚠️ IMPORTANT: Print Configuration",
-      instructionsText: "For physical measurements to be EXACT on paper, in the print dialog set the <strong>Scale to 100%</strong> (do not fit to printable area) and <strong>Margins to 'None'</strong> (or borderless).",
-      print: "Print / Save PDF",
-      close: "Close",
-      pageOf: "Page {current} of {total}",
-      cutHere: "✂️ CUT HERE & ALIGN WITH PAGE {next}",
-      alignHere: "🟢 ALIGN PAGE {prev} HERE",
-    }
-  }[locale];
+  const _ = (key: string): string => {
+    const dict = locale === 'es' ? es : en;
+    return (dict as Record<string, string>)[`export.pdf.${key}`] ?? key;
+  };
 
   return [
     '<!doctype html>',
@@ -65,7 +47,7 @@ export function exportPdfHtml(result: FretboardResult, options: ExportOptions): 
     '<head>',
     '  <meta charset="utf-8" />',
     '  <meta name="viewport" content="width=device-width, initial-scale=1" />',
-    `  <title>${escapeHtml(translations.title)}</title>`,
+    `        <title>${escapeHtml(_('title'))}</title>`,
     '  <link rel="preconnect" href="https://fonts.googleapis.com">',
     '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
     '  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">',
@@ -340,21 +322,21 @@ export function exportPdfHtml(result: FretboardResult, options: ExportOptions): 
     '<body>',
     '  <header class="toolbar no-print">',
     '    <div style="display: flex; flex-direction: column; gap: 4px;">',
-    `      <h1>${escapeHtml(translations.title)}</h1>`,
+    `      <h1>${escapeHtml(_('title'))}</h1>`,
     `      <div style="font-size: 11px; color: #94a3b8;">${escapeHtml(caption)}</div>`,
     '    </div>',
     '    <div class="toolbar-controls">',
     '      <div class="select-wrapper">',
-    `        <label for="paper-select">${escapeHtml(translations.paperSize)}</label>`,
+    `        <label for="paper-select">${escapeHtml(_('paperSize'))}</label>`,
     '        <select id="paper-select" class="toolbar-select">',
     '          <option value="a4" selected>A4 Landscape (297 x 210 mm)</option>',
     '          <option value="letter">Letter Landscape (279.4 x 215.9 mm)</option>',
     '        </select>',
     '      </div>',
-    `      <div class="instructions">${translations.instructionsText}</div>`,
+    `      <div class="instructions">${_('instructionsText')}</div>`,
     '      <div class="toolbar-buttons">',
-    `        <button class="btn btn-secondary" onclick="window.close()">${escapeHtml(translations.close)}</button>`,
-    `        <button class="btn btn-primary" onclick="window.print()">${escapeHtml(translations.print)}</button>`,
+    `        <button class="btn btn-secondary" onclick="window.close()">${escapeHtml(_('close'))}</button>`,
+    `        <button class="btn btn-primary" onclick="window.print()">${escapeHtml(_('print'))}</button>`,
     '      </div>',
     '    </div>',
     '  </header>',
@@ -365,7 +347,7 @@ export function exportPdfHtml(result: FretboardResult, options: ExportOptions): 
     svg,
     '  </div>',
     '  <script>',
-    '    const strings = ' + JSON.stringify(translations) + ';',
+    '    const strings = ' + JSON.stringify({pageOf:_('pageOf'),cutHere:_('cutHere'),alignHere:_('alignHere')}) + ';',
     '    const svgEl = document.querySelector("#original-svg svg");',
     '    const viewBoxStr = svgEl.getAttribute("viewBox");',
     '    const [minX, minY, widthMm, heightMm] = viewBoxStr.split(/\\s+/).map(Number);',

@@ -8,6 +8,14 @@
     "table": "Tabla de trastes",
     "export": "Exportar"
   },
+  "undo": {
+    "button": "Deshacer",
+    "shortcut": "Deshacer (Ctrl+Z)"
+  },
+  "redo": {
+    "button": "Rehacer",
+    "shortcut": "Rehacer (Ctrl+Shift+Z)"
+  },
   "panel": {
     "preset": {
       "label": "Preset de instrumento",
@@ -75,6 +83,24 @@
       "scalaInput": "Pegar contenido Scala SCL",
       "tuning": "Afinación (pasos de escala por cuerda)"
     },
+    "compensation": {
+      "label": "Compensaci\u00f3n",
+      "mode": {
+        "equal": "Igual",
+        "perString": "Por cuerda"
+      },
+      "offset": "Desplazamiento del saddle"
+    },
+    "scalePreset": {
+      "label": "Escala predefinida",
+      "placeholder": "Seleccionar escala...",
+      "category": {
+        "equal": "Temperamento igual",
+        "just": "Entonación justa",
+        "historical": "Históricas",
+        "microtonal": "Microtonales / Exóticas"
+      }
+    },
     "units": {
       "label": "Unidades",
       "precision": "Precision de display",
@@ -122,8 +148,12 @@
       "scalaInput": "Pega un archivo .scl. La cantidad de intervalos debe coincidir con lo declarado.",
       "tuning": "Para Scala: que paso de escala usa cada cuerda al aire (0 = unisono)."
     },
+    "compensation": {
+      "about": "Desplaza el saddle de cada cuerda hacia atrás para corregir la entonación. Las cuerdas gruesas necesitan más compensación (2–5mm típico para entorchadas, 1–3mm para lisas). Ponelo en 0 para no compensar."
+    },
+    "scalePreset": "Seleccioná una escala predefinida. El contenido del textarea se actualizará automáticamente. Podés editarlo manualmente después.",
     "export": {
-      "extendFrets": "Extiende los trastes hasta el contorno del diapason para export/impresion mas limpios."
+      "extendFrets": "Extiende los trastes hasta el contorno del diapasón para export/impresion mas limpios."
     }
   },
   "preview": {
@@ -150,12 +180,31 @@
     "csv": "Descargar CSV",
     "pdf": "Descargar PDF"
   },
+  "export.pdf.title": "FretLabs — Impresión y Armado a Escala Real (1:1)",
+  "export.pdf.paperSize": "Tamaño de papel:",
+  "export.pdf.instructionsTitle": "⚠️ IMPORTANTE: Configuración de Impresión",
+  "export.pdf.instructionsText": "Para que las medidas físicas sean EXACTAS en el papel, en la ventana de impresión configurá la <strong>Escala al 100%</strong> (sin ajustar al área de impresión) y los <strong>Márgenes en 'Ninguno'</strong> (o márgenes a cero / sin bordes).",
+  "export.pdf.print": "Imprimir / Guardar PDF",
+  "export.pdf.close": "Cerrar",
+  "export.pdf.pageOf": "Página {current} de {total}",
+  "export.pdf.cutHere": "✂️ CORTAR POR AQUÍ Y UNIR A PÁG. {next}",
+  "export.pdf.alignHere": "🟢 ALINEAR AQUÍ PÁG. {prev}",
+  "warnings": {
+    "fretCount": "Estás usando {count} trastes — la preview puede verse muy densa.",
+    "stringCount": "Estás usando {count} cuerdas — la preview puede verse muy densa.",
+    "scaleLengthMin": "La escala de {value}mm es muy corta — las distancias entre trastes serán mínimas.",
+    "scaleLengthMax": "La escala de {value}mm es muy larga — verificá que quepa en tu diseño."
+  },
   "errors": {
     "invalidScala": "Archivo Scala inválido. Verificá que la cantidad de intervalos coincida con lo declarado.",
     "invalidNumber": "Ingresá un número válido.",
     "outOfRange": "El valor debe estar entre {min} y {max}.",
     "minStrings": "Se requiere al menos 1 cuerda.",
     "minFrets": "Se requiere al menos 1 traste."
+  },
+  "theme": {
+    "dark": "Modo oscuro",
+    "light": "Modo claro"
   },
   "language": {
     "label": "Idioma",
@@ -170,5 +219,11 @@
     "title": "¿Te sirvió la herramienta?",
     "button": "Donar (Copiar Alias)",
     "copied": "¡Alias copiado!"
+  },
+  "compare": {
+    "enter": "Comparar",
+    "exit": "Salir de comparación",
+    "live": "Diseño actual",
+    "reference": "Referencia (congelada)"
   }
 }

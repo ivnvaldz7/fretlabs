@@ -114,6 +114,29 @@ export interface FretboardResult {
   meta: CalculationMeta;
 }
 
+// ── Intonation Compensation ──────────────────────────────────────────────────
+
+export type CompensationMode = 'equal' | 'perString';
+
+/**
+ * Intonation compensation moves each string's saddle back from the theoretical
+ * scale length to correct the sharpening caused by string stretch when fretted.
+ *
+ * Internally, compensation is ADDED to each string's scale length (effective
+ * scale length = theoretical + compensation). This shifts ALL fret positions
+ * proportionally and moves the bridge endpoint accordingly.
+ *
+ * - 'equal':  one value applied to all strings
+ * - 'perString': individual value per string (for adjustable saddles)
+ */
+export interface CompensationConfig {
+  mode: CompensationMode;
+  /** Same compensation for all strings, in mm */
+  equalMm: number;
+  /** Per-string compensation in mm (used in perString mode, one per string) */
+  perStringMm?: number[];
+}
+
 // ── Input configuration types ──
 
 export type ScaleLengthMode = 'single' | 'multi' | 'individual';

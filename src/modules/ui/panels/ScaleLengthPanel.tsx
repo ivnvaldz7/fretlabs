@@ -5,11 +5,15 @@
  * before updating the config (conversion happens at the input boundary).
  */
 
-import { fromMm, toMm } from '../../../utils/unit-converter';
+import { useState } from 'react';
+import { toDisplayValue, parseToMm } from '../../../utils/unit-converter';
+import { INPUT_CLS, LABEL_CLS } from '../../../utils/ui-classes';
 import { useLocale } from '../../../hooks/useLocale';
+import { validateScaleLength, validatePerpendicularDistance } from '../../../utils/validators';
 import type { ScaleLengthConfig, ScaleLengthMode } from '../../calculator/types';
 import type { Unit } from '../../../config/constants';
 import { HelpTip } from '../display/HelpTip';
+import { FieldError } from '../shared/FieldError';
 
 const MODES: ScaleLengthMode[] = ['single', 'multi', 'individual'];
 
@@ -18,21 +22,6 @@ interface ScaleLengthPanelProps {
   numStrings: number;
   unit: Unit;
   onChange: (update: Partial<ScaleLengthConfig>) => void;
-}
-
-/**
- * Convert a mm value to a display string in the given unit.
- * Uses 7 significant figures then strips trailing zeros.
- */
-function toDisplayValue(mm: number, unit: Unit): string {
-  return parseFloat(fromMm(mm, unit).toPrecision(7)).toString();
-}
-
-/**
- * Parse a display string in the given unit to mm.
- */
-function parseToMm(raw: string, unit: Unit): number {
-  return toMm(parseFloat(raw), unit);
 }
 
 /**
@@ -50,10 +39,7 @@ export function ScaleLengthPanel({
   onChange,
 }: ScaleLengthPanelProps) {
   const { t } = useLocale();
-
-  const inputCls =
-    'w-full rounded border border-border bg-surface-elevated px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none';
-  const labelCls = 'mb-0.5 block text-xs text-text-muted';
+  const [error, setError] = useState<string | null>(null);
 
   const handleModeChange = (mode: ScaleLengthMode) => {
     const update: Partial<ScaleLengthConfig> = { mode };
@@ -90,20 +76,24 @@ export function ScaleLengthPanel({
       {/* Single: one scale length */}
       {scaleLength.mode === 'single' && (
         <div>
-          <label className={labelCls}>
+          <label className={LABEL_CLS}>
             {t('panel.scaleLength.fundamental')} ({unit})
             <HelpTip text={t('help.scaleLength.fundamental')} />
           </label>
           <input
             type="number"
             step="any"
-            className={inputCls}
+            className={INPUT_CLS}
             value={toDisplayValue(scaleLength.fundamentalMm, unit)}
             onChange={(e) => {
               const mm = parseToMm(e.target.value, unit);
-              if (!isNaN(mm)) onChange({ fundamentalMm: mm });
+              if (mm === null) return;
+              const result = validateScaleLength(mm);
+              setError(result.valid ? null : result.error ?? null);
+              if (result.valid) onChange({ fundamentalMm: mm });
             }}
           />
+          <FieldError message={error} />
         </div>
       )}
 
@@ -111,39 +101,47 @@ export function ScaleLengthPanel({
       {scaleLength.mode === 'multi' && (
         <div className="space-y-2">
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.scaleLength.first')} ({unit})
               <HelpTip text={t('help.scaleLength.first')} />
             </label>
             <input
               type="number"
               step="any"
-              className={inputCls}
+              className={INPUT_CLS}
               value={toDisplayValue(scaleLength.fundamentalMm, unit)}
               onChange={(e) => {
                 const mm = parseToMm(e.target.value, unit);
-                if (!isNaN(mm)) onChange({ fundamentalMm: mm });
+                if (mm === null) return;
+                const result = validateScaleLength(mm);
+                setError(result.valid ? null : result.error ?? null);
+                if (result.valid) onChange({ fundamentalMm: mm });
               }}
             />
+            <FieldError message={error} />
           </div>
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.scaleLength.last')} ({unit})
               <HelpTip text={t('help.scaleLength.last')} />
             </label>
             <input
               type="number"
               step="any"
-              className={inputCls}
+              className={INPUT_CLS}
               value={toDisplayValue(scaleLength.lastMm ?? scaleLength.fundamentalMm, unit)}
               onChange={(e) => {
                 const mm = parseToMm(e.target.value, unit);
-                if (!isNaN(mm)) onChange({ lastMm: mm });
+                if (mm === null) return;
+                const result = validateScaleLength(mm);
+                setError(result.valid ? null : result.error ?? null);
+                if (result.valid) onChange({ lastMm: mm });
               }}
             />
+            <FieldError message={error} />
           </div>
           <div>
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.scaleLength.perpendicular')} (0–1)
               <HelpTip text={t('help.scaleLength.perpendicular')} />
             </label>
@@ -152,13 +150,18 @@ export function ScaleLengthPanel({
               step="0.01"
               min="0"
               max="1"
-              className={inputCls}
+              className={INPUT_CLS}
               value={scaleLength.perpendicularDistance}
               onChange={(e) => {
                 const v = parseFloat(e.target.value);
-                if (!isNaN(v)) onChange({ perpendicularDistance: v });
+                if (!isNaN(v)) {
+                  const result = validatePerpendicularDistance(v);
+                  setError(result.valid ? null : result.error ?? null);
+                  if (result.valid) onChange({ perpendicularDistance: v });
+                }
               }}
             />
+            <FieldError message={error} />
           </div>
         </div>
       )}
@@ -177,11 +180,14 @@ export function ScaleLengthPanel({
                 <input
                   type="number"
                   step="any"
-                  className={`${inputCls} flex-1`}
+                  className={`${INPUT_CLS} flex-1`}
                   value={toDisplayValue(mm, unit)}
                   onChange={(e) => {
                     const newMm = parseToMm(e.target.value, unit);
-                    if (!isNaN(newMm)) {
+                    if (newMm === null) return;
+                    const result = validateScaleLength(newMm);
+                    setError(result.valid ? null : result.error ?? null);
+                    if (result.valid) {
                       const base =
                         scaleLength.individualMm ??
                         Array<number>(numStrings).fill(scaleLength.fundamentalMm);
@@ -191,11 +197,12 @@ export function ScaleLengthPanel({
                     }
                   }}
                 />
+                <FieldError message={error} />
               </div>
             );
           })}
           <div className="pt-1">
-            <label className={labelCls}>
+            <label className={LABEL_CLS}>
               {t('panel.scaleLength.perpendicular')} (0–1)
               <HelpTip text={t('help.scaleLength.perpendicular')} />
             </label>
@@ -204,13 +211,18 @@ export function ScaleLengthPanel({
               step="0.01"
               min="0"
               max="1"
-              className={inputCls}
+              className={INPUT_CLS}
               value={scaleLength.perpendicularDistance}
               onChange={(e) => {
                 const v = parseFloat(e.target.value);
-                if (!isNaN(v)) onChange({ perpendicularDistance: v });
+                if (!isNaN(v)) {
+                  const result = validatePerpendicularDistance(v);
+                  setError(result.valid ? null : result.error ?? null);
+                  if (result.valid) onChange({ perpendicularDistance: v });
+                }
               }}
             />
+            <FieldError message={error} />
           </div>
         </div>
       )}

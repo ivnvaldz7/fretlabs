@@ -88,3 +88,26 @@ export function formatForDisplay(
 
   return converted.toFixed(UNIT_PRECISION[unit]);
 }
+
+/**
+ * Format a mm value for display in the given unit.
+ * @param mm - The value in mm
+ * @param unit - The target display unit
+ * @returns Formatted string with appropriate precision
+ */
+export function toDisplayValue(mm: number, unit: Unit): string {
+  const value = fromMm(mm, unit);
+  return unit === 'in' ? value.toPrecision(5) : value.toPrecision(7);
+}
+
+/**
+ * Parse a user-entered string in the given unit and return mm.
+ * @param value - The user-entered string
+ * @param unit - The source unit
+ * @returns Value in mm, or null if invalid
+ */
+export function parseToMm(value: string, unit: Unit): number | null {
+  const parsed = parseFloat(value);
+  if (isNaN(parsed) || parsed < 0) return null;
+  return toMm(parsed, unit);
+}

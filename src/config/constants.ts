@@ -17,6 +17,8 @@ export const LIMITS = {
   MAX_EXTENSION_MM: 100,
   MIN_PERPENDICULAR_DISTANCE: 0,
   MAX_PERPENDICULAR_DISTANCE: 1,
+  MIN_COMPENSATION_MM: 0,
+  MAX_COMPENSATION_MM: 20,
 } as const;
 
 /** Default values for a new fretboard design */
@@ -86,3 +88,9 @@ export const UNIT_PRECISION: Record<Unit, number> = {
   cm: 4,
   in: 5,
 };
+
+/** UI warning thresholds — values exceeding these show a non-blocking warning. */
+export const WARN_MAX_FRETS = 36;
+export const WARN_MAX_STRINGS = 12;
+export const WARN_MIN_SCALE_LENGTH = 200; // mm
+export const WARN_MAX_SCALE_LENGTH = 1000; // mm
