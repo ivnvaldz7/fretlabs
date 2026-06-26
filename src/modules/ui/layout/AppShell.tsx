@@ -196,27 +196,29 @@ export function AppShell() {
           <p className="text-xs text-text-dim">{t('app.tagline')}</p>
         </div>
         <div className="flex items-center gap-1.5">
-          {/* Undo / Redo */}
-          <button
-            type="button"
-            onClick={undo}
-            disabled={!canUndo}
-            className="rounded border border-border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-30 enabled:hover:bg-surface-elevated"
-            title={t('undo.shortcut')}
-            aria-label={t('undo.button')}
-          >
-            ↩
-          </button>
-          <button
-            type="button"
-            onClick={redo}
-            disabled={!canRedo}
-            className="rounded border border-border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-30 enabled:hover:bg-surface-elevated"
-            title={t('redo.shortcut')}
-            aria-label={t('redo.button')}
-          >
-            ↪
-          </button>
+          {/* Undo / Redo — hidden on mobile (keyboard-driven) */}
+          <div className="hidden md:flex md:items-center md:gap-1.5">
+            <button
+              type="button"
+              onClick={undo}
+              disabled={!canUndo}
+              className="rounded border border-border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-30 enabled:hover:bg-surface-elevated"
+              title={t('undo.shortcut')}
+              aria-label={t('undo.button')}
+            >
+              ↩
+            </button>
+            <button
+              type="button"
+              onClick={redo}
+              disabled={!canRedo}
+              className="rounded border border-border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-30 enabled:hover:bg-surface-elevated"
+              title={t('redo.shortcut')}
+              aria-label={t('redo.button')}
+            >
+              ↪
+            </button>
+          </div>
 
           {/* Theme toggle */}
           <button
@@ -503,6 +505,7 @@ export function AppShell() {
           )}
 
           <MobileLayout
+            initialOpenId="scaleLength"
             panels={[
               {
                 id: 'preset',

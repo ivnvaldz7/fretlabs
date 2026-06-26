@@ -9,6 +9,7 @@ interface PanelItem {
 interface MobileLayoutProps {
   panels: PanelItem[];
   preview: ReactNode;
+  initialOpenId?: string;
   error?: ReactNode;
 }
 
@@ -28,8 +29,9 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-export function MobileLayout({ panels, preview, error }: MobileLayoutProps) {
-  const [openPanels, setOpenPanels] = useState<Set<string>>(new Set([panels[0]?.id ?? '']));
+export function MobileLayout({ panels, preview, initialOpenId, error }: MobileLayoutProps) {
+  const defaultId = initialOpenId ?? panels[0]?.id ?? '';
+  const [openPanels, setOpenPanels] = useState<Set<string>>(new Set([defaultId]));
 
   const togglePanel = (id: string) => {
     setOpenPanels((prev) => {

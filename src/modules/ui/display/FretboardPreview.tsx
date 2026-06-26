@@ -71,7 +71,7 @@ export function FretboardPreview({
             {mainView === 'design' ? t('preview.title') : t('table.title')}
           </span>
         </div>
-        <div className="flex items-center gap-3 md:gap-4">
+        <div className="hidden items-center gap-3 md:flex md:gap-4">
           {mainView === 'design' &&
             (
               [
