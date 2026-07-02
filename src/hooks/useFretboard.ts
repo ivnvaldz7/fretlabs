@@ -252,7 +252,7 @@ function sanitizeLoadedConfig(raw: unknown): FretboardConfig | null {
   if (isRecord(raw.compensation)) {
     const mode = raw.compensation.mode;
     if (mode === 'equal' || mode === 'perString') {
-      const comp: CompensationConfig = { mode };
+      const comp: CompensationConfig = { mode, equalMm: 0 };
 
       if (mode === 'equal') {
         comp.equalMm = clampNumber(

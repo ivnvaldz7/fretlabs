@@ -29,7 +29,6 @@ import type {
   FretboardOutline,
   CalculationMeta,
   OverhangConfig,
-  CompensationConfig,
 } from './types';
 import { LIMITS, DEFAULTS } from '../../config/constants';
 import { normalizeVector } from '../../utils/geometry';

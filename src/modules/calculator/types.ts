@@ -182,6 +182,7 @@ export interface FretboardConfig {
   strings: StringConfig;
   calculation: CalculationConfig;
   overhang?: OverhangConfig;
+  compensation?: CompensationConfig;
   numFrets: number;
   unit: Unit;
 }

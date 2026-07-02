@@ -38,7 +38,7 @@ export function exportPdfHtml(result: FretboardResult, options: ExportOptions): 
 
   const _ = (key: string): string => {
     const dict = locale === 'es' ? es : en;
-    return (dict as Record<string, string>)[`export.pdf.${key}`] ?? key;
+    return ((dict as Record<string, unknown>)[`export.pdf.${key}`] as string | undefined) ?? key;
   };
 
   return [
